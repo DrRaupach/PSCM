@@ -1,11 +1,13 @@
 #feature-id    PlanckStarColorMapping : Utilities > PlanckStarColorMapping
 
-#feature-info\
+#feature-info \
 Maps HOO/HSO/SHO/... stars to naturally colored stars using Planck's law of black body radiation.<br/>\
 Version 1.1.3<br/>\
-Copyright (C) 2026 Dr. Rainer Raupach<br/>\
+Copyright (C) 2026 Dr. Rainer Raupach<br/>
 
+#define TITLE "Planck Star Color Mapping (PSCM)"
 #define VERSION "V1.1.3"
+#define DEVELOPER "Dr. Rainer Raupach"
 
 #define DEFAULT_COLOR_SATURATION (1.0)
 #define DEFAULT_PROTECT_BACKGROUND (6)
@@ -38,7 +40,18 @@ function ScaleImageDialog() {
     this.__base__();
 
     // Title
-    this.windowTitle = "Planck Star Color Mapping (PSCM) - " + VERSION;
+    this.windowTitle = "Planck Star Color Mapping (PSCM)";
+
+    this.helpLabel = new Label( this );
+    this.helpLabel.styleSheet = this.scaledStyleSheet(
+                                   "QWidget#" + this.helpLabel.uniqueId + " {"
+                                   + "border: 1px solid gray;"
+                                   + "padding: 0.25em;"
+                                   + "}");
+    this.helpLabel.wordWrapping = true;
+    this.helpLabel.useRichText = true;
+    this.helpLabel.text = "<p><strong>" + TITLE + " version " + VERSION + "</strong><br/>"
+                          + "Copyright &copy; 2026 " + DEVELOPER + ".</p>";
 
     this.info = new Label(this);
     this.info.margin = 0;
@@ -148,6 +161,7 @@ function ScaleImageDialog() {
     this.sizer = new VerticalSizer;
     this.sizer.margin = 10;
     this.sizer.spacing = 10;
+    this.sizer.add(this.helpLabel);
     this.sizer.add(this.info);
     this.sizer.add(this.imageTypeSizer);
     this.sizer.add(this.colorSaturationEdit);
