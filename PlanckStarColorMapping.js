@@ -2,27 +2,27 @@
 
 #feature-info \
 Maps HOO/HSO/SHO/... stars to naturally colored stars using Planck's law of black body radiation.<br/>\
-Version 1.1.3<br/>\
 Copyright (C) 2026 Dr. Rainer Raupach<br/>
 
 #define TITLE "Planck Star Color Mapping (PSCM)"
-#define VERSION "V1.1.3"
+#define VERSION "V1.1.4"
 #define DEVELOPER "Dr. Rainer Raupach"
 
 #define DEFAULT_COLOR_SATURATION (1.0)
 #define DEFAULT_PROTECT_BACKGROUND (6)
 #define DEFAULT_SPECTRAL_SPREAD (1.0)
 
-#define LAMBDA_SII (672.4e-9)
-#define LAMBDA_HA (656.3e-9)
-#define LAMBDA_OIII (500.7e-9)
-#define LAMBDA_R (622.0e-9)
-#define LAMBDA_G (530.0e-9)
-#define LAMBDA_B (476.0e-9)
+#define LAMBDA_SII (672.4)
+#define LAMBDA_HA (656.3)
+#define LAMBDA_OIII (500.7)
+#define LAMBDA_R (622.0)
+#define LAMBDA_G (530.0)
+#define LAMBDA_B (476.0)
 
 #include <pjsr/UndoFlag.jsh>
 #include <pjsr/SectionBar.jsh>
 #include <pjsr/NumericControl.jsh>
+#include <pjsr/DataType.jsh>
 
 var myConfig = {};
 
@@ -33,6 +33,15 @@ Object.defineProperty(myConfig, "imageTypeOptions", {
    configurable: false
 });
 
+// Handling of UI parameter restoring
+var SETTINGS_KEY_BASE = "PSCM/";
+var KEY_IMAGETYPE = SETTINGS_KEY_BASE + "imageType";
+var KEY_SATURATION_VALUE = SETTINGS_KEY_BASE + "saturationValue";
+var KEY_PROTECTBGR_VALUE = SETTINGS_KEY_BASE + "protectBgrValue";
+var KEY_UNPHYSICAL_VALUE = SETTINGS_KEY_BASE + "unphysicalState";
+var KEY_SPREADING_VALUE = SETTINGS_KEY_BASE + "spreadingValue";
+
+
 // -----------------------------------------------------------------------------
 function ScaleImageDialog() {
 
@@ -42,7 +51,7 @@ function ScaleImageDialog() {
     // Title
     this.windowTitle = "Planck Star Color Mapping (PSCM)";
 
-    this.helpLabel = new Label( this );
+    this.helpLabel = new Label(this);
     this.helpLabel.styleSheet = this.scaledStyleSheet(
                                    "QWidget#" + this.helpLabel.uniqueId + " {"
                                    + "border: 1px solid gray;"
@@ -61,8 +70,7 @@ function ScaleImageDialog() {
                         + "3.  Apply ImageSolver to find astrometric solution on HOO image.\n\n"
                         + "4.  Apply SPCC with 'Red filter' at 656.3, 'Green/Blue filter' at 500.7 in \n"
                         + "     'Narrowband mode' and 'Optimize for Stars' checked. The white reference \n"
-                        + "     should not be ''too hot''. 'Average Galaxy' (~4500K) is a good choice\n"
-                        + "     but e.g. 'G2V' (5780K) works as well.\n\n"
+                        + "     should not be ''too hot''. 'Average Galaxy' (~4500K) is a good choice.\n\n"
                         + "5.  Derive the Starless image (e.g. by SXT), also the Stars in unscreen mode.\n"
                         + "     [Stars can also be calculated manually using PixelMath by ~(~HOO / ~Starless)]\n\n"
                         + "6.  Apply PSCM to the Star image which transforms the HOO colors\n"
@@ -85,6 +93,8 @@ function ScaleImageDialog() {
     for (var n = 0; n < myConfig.imageTypeOptions.length; n++) {
       this.imageType.addItem(myConfig.imageTypeOptions[n]);
     }
+    this.imageType.currentItem = Settings.read(KEY_IMAGETYPE, DataType_Int32);
+
 
     this.imageTypeSizer = new HorizontalSizer;
     this.imageTypeSizer.spacing = 4;
@@ -101,7 +111,9 @@ function ScaleImageDialog() {
     this.colorSaturationEdit.slider.setRange(0, 200);
     this.colorSaturationEdit.slider.stepSize = 1;
     this.colorSaturationEdit.slider.pageSize = 10;
-    this.colorSaturationEdit.setValue(DEFAULT_COLOR_SATURATION); // must be set at the end!
+    let saturationValue = Settings.read(KEY_SATURATION_VALUE, DataType_Double);
+    if (null == saturationValue) saturationValue = DEFAULT_COLOR_SATURATION;
+    this.colorSaturationEdit.setValue(saturationValue); // must be set at the end!
 
     // Protect background
     this.protectBackgroundEdit = new NumericControl(this);
@@ -113,7 +125,9 @@ function ScaleImageDialog() {
     this.protectBackgroundEdit.slider.setRange(0, 100);
     this.protectBackgroundEdit.slider.stepSize = 1;
     this.protectBackgroundEdit.slider.pageSize = 10;
-    this.protectBackgroundEdit.setValue(DEFAULT_PROTECT_BACKGROUND); // must be set at the end!
+    let protectBgrValue = Settings.read(KEY_PROTECTBGR_VALUE, DataType_Double);
+    if (null == protectBgrValue) protectBgrValue = DEFAULT_PROTECT_BACKGROUND;
+    this.protectBackgroundEdit.setValue(protectBgrValue); // must be set at the end!
 
     // Spectral spreading
     this.spreadSpectralClass = new NumericControl(this);
@@ -125,18 +139,22 @@ function ScaleImageDialog() {
     this.spreadSpectralClass.slider.setRange(0, 100);
     this.spreadSpectralClass.slider.stepSize = 1;
     this.spreadSpectralClass.slider.pageSize = 10;
-    this.spreadSpectralClass.setValue(DEFAULT_SPECTRAL_SPREAD); // must be set at the end!
+    let spreadingValue = Settings.read(KEY_SPREADING_VALUE, DataType_Double);
+    if (null == spreadingValue) spreadingValue = DEFAULT_SPECTRAL_SPREAD;
+    this.spreadSpectralClass.setValue(spreadingValue); // must be set at the end!
 
-    this.cosmeticsContent = new Control(this);
-    //this.cosmeticsContent.hide();
+    this.unphysicalContent = new Control(this);
+    //this.unphysicalContent.hide();
 
-    this.cosmeticsContent.sizer = new VerticalSizer;
-    this.cosmeticsContent.sizer.add(this.spreadSpectralClass);
+    this.unphysicalContent.sizer = new VerticalSizer;
+    this.unphysicalContent.sizer.add(this.spreadSpectralClass);
 
-    this.cosmeticsBar = new SectionBar(this, "Unphysical");
-    this.cosmeticsBar.enableCheckBox();
-    this.cosmeticsBar.checkBox.checked = false;
-    this.cosmeticsBar.setSection(this.cosmeticsContent);
+    this.unphysicalBar = new SectionBar(this, "Unphysical");
+    this.unphysicalBar.enableCheckBox();
+    let unphysicalState = Settings.read(KEY_UNPHYSICAL_VALUE, DataType_Boolean);
+    if (null == unphysicalState) unphysicalState = false;
+    this.unphysicalBar.checkBox.checked = unphysicalState;
+    this.unphysicalBar.setSection(this.unphysicalContent);
 
     // OK / Cancel Buttons
     this.ok_Button = new PushButton(this);
@@ -166,9 +184,8 @@ function ScaleImageDialog() {
     this.sizer.add(this.imageTypeSizer);
     this.sizer.add(this.colorSaturationEdit);
     this.sizer.add(this.protectBackgroundEdit);
-    this.sizer.add(this.cosmeticsBar);
-    this.sizer.add(this.cosmeticsContent);
-    //this.sizer.add(this.spreadSpectralClass);
+    this.sizer.add(this.unphysicalBar);
+    this.sizer.add(this.unphysicalContent);
     this.sizer.add(this.buttonSizer);
 
     this.adjustToContents();
@@ -303,7 +320,6 @@ function InitForImageType(imageType, mad) {
 
    // find matching index in image type presets
    let match = findIndex(myConfig.imageTypeOptions, function(v) {return v == imageType} );
-   console.writeln("Image type " + imageType + " corresponds to index " + match + ".");
 
    if (match == -1) {
       throw new Error("No configuration found for " + imageType + ".");
@@ -440,7 +456,7 @@ function process(dialog) {
 
     // get parameters from UI
     var colorSaturationFactor = dialog.colorSaturationEdit.value;
-    var fSpectralClass = dialog.spreadSpectralClass.value;
+    var fSpectralClass = dialog.unphysicalBar.checkBox.checked ? dialog.spreadSpectralClass.value : 1.0;
     var g = dialog.protectBackgroundEdit.value;
 
     switch (pars.length) {
@@ -574,6 +590,16 @@ function process(dialog) {
     view.endProcess();
 }
 
+// -----------------------------------------------------------------------------
+// Store UI parameters
+function storeUI(dialog) {
+    Settings.write(KEY_IMAGETYPE, DataType_Int32, dialog.imageType.currentItem);
+    Settings.write(KEY_SATURATION_VALUE, DataType_Double, dialog.colorSaturationEdit.value);
+    Settings.write(KEY_PROTECTBGR_VALUE, DataType_Double, dialog.protectBackgroundEdit.value);
+    Settings.write(KEY_UNPHYSICAL_VALUE, DataType_Boolean, dialog.unphysicalBar.checkBox.checked);
+    Settings.write(KEY_SPREADING_VALUE, DataType_Double, dialog.spreadSpectralClass.value);
+};
+
 // =============================================================================
 // inherit from Dialog
 ScaleImageDialog.prototype = new Dialog;
@@ -585,11 +611,12 @@ function main() {
     var dialog = new ScaleImageDialog();
 
     if (!dialog.execute()) {
-        console.writeln("Aborted manually.");
         return;
     }
 
     process(dialog);
+
+    storeUI(dialog);
 }
 
 // run Script
