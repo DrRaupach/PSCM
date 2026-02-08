@@ -12,12 +12,12 @@ Copyright (C) 2026 Dr. Rainer Raupach<br/>
 #define DEFAULT_PROTECT_BACKGROUND (6)
 #define DEFAULT_SPECTRAL_SPREAD (1.0)
 
-#define LAMBDA_SII (672.4e-9)
-#define LAMBDA_HA (656.3e-9)
-#define LAMBDA_OIII (500.7e-9)
-#define LAMBDA_R (622.0e-9)
-#define LAMBDA_G (530.0e-9)
-#define LAMBDA_B (476.0e-9)
+#define LAMBDA_SII (672.4)
+#define LAMBDA_HA (656.3)
+#define LAMBDA_OIII (500.7)
+#define LAMBDA_R (622.0)
+#define LAMBDA_G (530.0)
+#define LAMBDA_B (476.0)
 
 #include <pjsr/UndoFlag.jsh>
 #include <pjsr/SectionBar.jsh>
@@ -51,7 +51,7 @@ function ScaleImageDialog() {
     // Title
     this.windowTitle = "Planck Star Color Mapping (PSCM)";
 
-    this.helpLabel = new Label( this );
+    this.helpLabel = new Label(this);
     this.helpLabel.styleSheet = this.scaledStyleSheet(
                                    "QWidget#" + this.helpLabel.uniqueId + " {"
                                    + "border: 1px solid gray;"
@@ -70,8 +70,7 @@ function ScaleImageDialog() {
                         + "3.  Apply ImageSolver to find astrometric solution on HOO image.\n\n"
                         + "4.  Apply SPCC with 'Red filter' at 656.3, 'Green/Blue filter' at 500.7 in \n"
                         + "     'Narrowband mode' and 'Optimize for Stars' checked. The white reference \n"
-                        + "     should not be ''too hot''. 'Average Galaxy' (~4500K) is a good choice\n"
-                        + "     but e.g. 'G2V' (5780K) works as well.\n\n"
+                        + "     should not be ''too hot''. 'Average Galaxy' (~4500K) is a good choice.\n\n"
                         + "5.  Derive the Starless image (e.g. by SXT), also the Stars in unscreen mode.\n"
                         + "     [Stars can also be calculated manually using PixelMath by ~(~HOO / ~Starless)]\n\n"
                         + "6.  Apply PSCM to the Star image which transforms the HOO colors\n"
