@@ -51,7 +51,7 @@ function ScaleImageDialog() {
     this.helpLabel.wordWrapping = true;
     this.helpLabel.useRichText = true;
     this.helpLabel.text = "<p><strong>" + TITLE + " version " + VERSION + "</strong><br/>"
-                          + "Copyright &copy; 2026 " + DEVELOPER + ".</p>";
+                          + "Copyright &copy; 2026 " + DEVELOPER + "</p>";
 
     this.info = new Label(this);
     this.info.margin = 0;
@@ -73,7 +73,7 @@ function ScaleImageDialog() {
                         + "without the need of an additional RGB image, still in lineal domain.\n"
                         + "Continue with stretching and further post-processing as usual.\n\n"
                         + "In general: the wavelengths in SPCC for S|H|O should be 672.4|656.3|500.7\n"
-                        + "assigned to the respective filter slot. For RGB, the standard filters can be used.\n"
+                        + "assigned to the respective filter slot. For RGB, the standard filters can be used.\n";
 
     // Input image type
     this.imageTypeLabel = new Label(this);
@@ -94,7 +94,7 @@ function ScaleImageDialog() {
     // Saturation factor
     this.colorSaturationEdit = new NumericControl(this);
     this.colorSaturationEdit.label.text = "Color Saturation Factor:";
-    this.colorSaturationEdit.toolTip = "Color Saturation Factor.";
+    this.colorSaturationEdit.toolTip = "Color Saturation Factor. Increased saturation may increase color errors of the input image.";
     this.colorSaturationEdit.label.minWidth = 200;
     this.colorSaturationEdit.setRange(0.00, 2.00);
     this.colorSaturationEdit.setPrecision(2);
