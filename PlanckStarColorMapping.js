@@ -5,7 +5,7 @@ Maps HOO/HSO/SHO/... stars to naturally colored stars using Planck's law of blac
 Copyright (C) 2026 Dr. Rainer Raupach<br/>
 
 #define TITLE "Planck Star Color Mapping (PSCM)"
-#define VERSION "V1.1.4"
+#define VERSION "V1.1.5"
 #define DEVELOPER "Dr. Rainer Raupach"
 
 #define DEFAULT_COLOR_SATURATION (1.0)
