@@ -7,7 +7,7 @@
    </description>
    <platform os="all" arch="noarch" version="1.9.3:1.9.9">
       <package fileName="./packages/PSCM_v1.1.6.zip" 
-               sha1="692538A4B037F602D65D23EAB69C442ABBDC4224" 
+               sha1="228B6E787B5F41C2F26D5D3A356F7DBD8F6D8CFB" 
                type="script" 
                releaseDate="20260222">
          <title>
