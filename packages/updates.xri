@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xri version="1.0">
+   <description>
+      <p>
+         Planck Star Color Mapping (PSCM).
+      </p>
+   </description>
+   <platform os="all" arch="noarch" version="1.9.3:1.9.9">
+      <package fileName="PSCM_v1.1.6.zip" 
+               sha1="692538A4B037F602D65D23EAB69C442ABBDC4224" 
+               type="script" 
+               releaseDate="20260222">
+         <title>
+            Planck Star Color Mapping (PSCM) - v1.1.6
+         </title>
+         <description>
+            <p>
+               This script performes mapping to Planck colors in PixInsight.
+            </p>
+         </description>
+      </package>
+   </platform>
+</xri>
