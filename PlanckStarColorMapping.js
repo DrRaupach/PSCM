@@ -165,7 +165,7 @@ function ScaleImageDialog() {
     };
 
     this.cancel_Button = new PushButton(this);
-    this.cancel_Button.text = "Abbrechen";
+    this.cancel_Button.text = "Cancel";
     this.cancel_Button.onClick = () => {
         this.cancel();
     };
