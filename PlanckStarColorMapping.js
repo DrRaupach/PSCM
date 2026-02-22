@@ -93,8 +93,9 @@ function ScaleImageDialog() {
     for (var n = 0; n < myConfig.imageTypeOptions.length; n++) {
       this.imageType.addItem(myConfig.imageTypeOptions[n]);
     }
-    this.imageType.currentItem = Settings.read(KEY_IMAGETYPE, DataType_Int32);
-
+    let lastItem = Settings.read(KEY_IMAGETYPE, DataType_Int32);
+    if (null == lastItem) lastItem = 0;
+    this.imageType.currentItem = lastItem;
 
     this.imageTypeSizer = new HorizontalSizer;
     this.imageTypeSizer.spacing = 4;
@@ -164,7 +165,7 @@ function ScaleImageDialog() {
     };
 
     this.cancel_Button = new PushButton(this);
-    this.cancel_Button.text = "Abbrechen";
+    this.cancel_Button.text = "Cancel";
     this.cancel_Button.onClick = () => {
         this.cancel();
     };
