@@ -5,8 +5,8 @@
          Planck Star Color Mapping (PSCM).
       </p>
    </description>
-   <platform os="all" arch="noarch" version="1.9.3:1.9.9">
-      <package fileName="PSCM_v1.1.6.zip" 
+   <platform os="all" arch="noarch" version="1.8.9:1.9.9">
+      <package fileName="PSCM.zip" 
                sha1="875f0a8d5ac7b4694900e8cf272af7e0ca88c619" 
                type="script" 
                releaseDate="20260222">
@@ -15,7 +15,7 @@
          </title>
          <description>
             <p>
-               This script performes mapping to Planck colors in PixInsight.
+               This script performes mapping of narrow-band stars to RGB stars according to Planck's law in PixInsight.
             </p>
          </description>
       </package>
