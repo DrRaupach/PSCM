@@ -11,3 +11,5 @@ Stars are, to first approximation, ideal blackbody radiators. According to Planc
 Due to the mathematical properties of the Planck distribution, it is sufficient to know the (calibrated) intensity ratio at two different wavelengths. The approach therefore consists of first determining the stellar temperature from intensities measured in narrowband data and then, in reverse, synthesizing the color that the corresponding blackbody spectrum would exhibit in an RGB image.
 
 To use PSCM in PixInsight add the following repository link in RESOURCES -> Updates -> Manage Repositories: https://drraupach.github.io/PSCM/
+
+Requires minimum PixInsight version 1.8.9 with update-rsc.auth equal to or newer than Feb 13th 2026.
