@@ -5,7 +5,7 @@
          Planck Star Color Mapping (PSCM).
       </p>
    </description>
-   <platform os="all" arch="noarch" version="1.8.9:1.9.9">
+   <platform os="all" arch="noarch" version="1.9.3:1.9.9">
       <package fileName="PSCM.zip" 
                sha1="875f0a8d5ac7b4694900e8cf272af7e0ca88c619" 
                type="script" 
