@@ -9,10 +9,10 @@ Unless RGB data have already been acquired — for example, to represent reflect
 Stars are, to first approximation, ideal blackbody radiators. According to Planck’s radiation law (PRL), they emit a characteristic spectrum determined by their surface temperature. Under this assumption, the color of a star is uniquely defined by its temperature. If the temperature can be estimated from arbitrary spectral measurements, the corresponding color can be computed from Planck’s law.
 Due to the mathematical properties of the Planck distribution, it is sufficient to know the (calibrated) intensity ratio at two different wavelengths. The approach therefore consists of first determining the stellar temperature from intensities measured in narrowband data and then, in reverse, synthesizing the color that the corresponding blackbody spectrum would exhibit in an RGB image.
 </p>
-<p><b>PixInsight Integration:</b>
+<p><b>PixInsight Integration:</b><br>
 To use PSCM in PixInsight add the following repository link in RESOURCES -> Updates -> Manage Repositories: https://drraupach.github.io/PSCM/<br>
 Requires minimum PixInsight version 1.9.3 with update-rsc.auth equal to or newer than Feb 13th 2026.<br>
-</p>
+</p><br>
 
 <p><b>Typical workflow, exemplarily for HOO:</b>
 <ol>
@@ -26,7 +26,7 @@ Requires minimum PixInsight version 1.9.3 with update-rsc.auth equal to or newer
 <li>Combine the PSCM mapped Stars with the Starless by screening — e.g. using PixelMath by ~(~Starless * ~Stars).</li>
 </ol>
 Voilà! You now have a bi-color HOO image with (almost) naturally colored stars without the need of an additional RGB image, still in lineal domain.<br>
-</p>
+</p><br>
 
 <p>
 <b>Notes</b><br>
