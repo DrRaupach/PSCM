@@ -5,11 +5,11 @@ Maps HOO/HSO/SHO/... stars to naturally colored stars using Planck's law of blac
 Copyright (C) 2026 Dr. Rainer Raupach<br/>
 
 #define TITLE "Planck Star Color Mapping (PSCM)"
-#define VERSION "V1.1.6"
+#define VERSION "V1.2.0"
 #define DEVELOPER "Dr. Rainer Raupach"
 
 #define DEFAULT_COLOR_SATURATION (1.0)
-#define DEFAULT_PROTECT_BACKGROUND (6)
+#define DEFAULT_PROTECT_BACKGROUND (1.5)
 #define DEFAULT_SPECTRAL_SPREAD (1.0)
 
 #define LAMBDA_SII (672.4)
@@ -497,6 +497,7 @@ function process(dialog) {
 
                 let cFactor = colorSaturationFactor;
                 cFactor *= lchPixel.Cf;
+                cFactor *= w;
                 cFactor *= fSpectralClass > 1.0 ? saturationCorrFactor(dbeta, lchPixel.C) : 1.0;
 
                 // convert original pixel to LCh
@@ -569,6 +570,7 @@ function process(dialog) {
 
                 let cFactor = colorSaturationFactor;
                 cFactor *= lchPixel.Cf;
+                cFactor *= Math.min(w0, w1);
                 cFactor *= fSpectralClass > 1.0 ? saturationCorrFactor(dbeta, lchPixel.C) : 1.0;
 
                 // convert original pixel to LCh
