@@ -5,11 +5,11 @@ Maps HOO/HSO/SHO/... stars to naturally colored stars using Planck's law of blac
 Copyright (C) 2026 Dr. Rainer Raupach<br/>
 
 #define TITLE "Planck Star Color Mapping (PSCM)"
-#define VERSION "V1.1.6"
+#define VERSION "V1.2.0"
 #define DEVELOPER "Dr. Rainer Raupach"
 
 #define DEFAULT_COLOR_SATURATION (1.0)
-#define DEFAULT_PROTECT_BACKGROUND (6)
+#define DEFAULT_PROTECT_BACKGROUND (1.5)
 #define DEFAULT_SPECTRAL_SPREAD (1.0)
 
 #define LAMBDA_SII (672.4)
@@ -35,6 +35,7 @@ Object.defineProperty(myConfig, "imageTypeOptions", {
 
 // Handling of UI parameter restoring
 var SETTINGS_KEY_BASE = "PSCM/";
+var KEY_VERSION = SETTINGS_KEY_BASE + "version";
 var KEY_IMAGETYPE = SETTINGS_KEY_BASE + "imageType";
 var KEY_SATURATION_VALUE = SETTINGS_KEY_BASE + "saturationValue";
 var KEY_PROTECTBGR_VALUE = SETTINGS_KEY_BASE + "protectBgrValue";
@@ -83,6 +84,10 @@ function ScaleImageDialog() {
                         + "In general: the wavelengths in SPCC for S|H|O should be 672.4|656.3|500.7\n"
                         + "assigned to the respective filter slot. For RGB, the standard filters can be used.\n";
 
+    // Detect version update since last excution and store current version
+    let lastVersion = Settings.read(KEY_VERSION, DataType_String);
+    let isUpgradeFromV116 = (null != lastVersion) && (lastVersion == "V1.1.6") && isVersionGreater(VERSION, lastVersion);
+
     // Input image type
     this.imageTypeLabel = new Label(this);
     this.imageTypeLabel.text = "Input Image Type:";
@@ -127,7 +132,12 @@ function ScaleImageDialog() {
     this.protectBackgroundEdit.slider.stepSize = 1;
     this.protectBackgroundEdit.slider.pageSize = 10;
     let protectBgrValue = Settings.read(KEY_PROTECTBGR_VALUE, DataType_Double);
-    if (null == protectBgrValue) protectBgrValue = DEFAULT_PROTECT_BACKGROUND;
+    if (null == protectBgrValue) {
+       protectBgrValue = DEFAULT_PROTECT_BACKGROUND;
+    }
+    else {
+       if (isUpgradeFromV116) protectBgrValue = protectBgrValue / 4;
+    }
     this.protectBackgroundEdit.setValue(protectBgrValue); // must be set at the end!
 
     // Spectral spreading
@@ -190,6 +200,22 @@ function ScaleImageDialog() {
     this.sizer.add(this.buttonSizer);
 
     this.adjustToContents();
+}
+
+// -----------------------------------------------------------------------------
+// Helper function to compare versions
+function isVersionGreater(v1, v2) {
+   let parts1 = v1.split('.').map(Number);
+   let parts2 = v2.split('.').map(Number);
+
+   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+      let p1 = parts1[i] || 0; // standard 0, if segment is missing
+      let p2 = parts2[i] || 0;
+
+      if (p1 > p2) return true;
+      if (p1 < p2) return false;
+   }
+   return false; // identical
 }
 
 // -----------------------------------------------------------------------------
@@ -497,6 +523,7 @@ function process(dialog) {
 
                 let cFactor = colorSaturationFactor;
                 cFactor *= lchPixel.Cf;
+                cFactor *= w;
                 cFactor *= fSpectralClass > 1.0 ? saturationCorrFactor(dbeta, lchPixel.C) : 1.0;
 
                 // convert original pixel to LCh
@@ -569,6 +596,7 @@ function process(dialog) {
 
                 let cFactor = colorSaturationFactor;
                 cFactor *= lchPixel.Cf;
+                cFactor *= Math.min(w0, w1);
                 cFactor *= fSpectralClass > 1.0 ? saturationCorrFactor(dbeta, lchPixel.C) : 1.0;
 
                 // convert original pixel to LCh
@@ -594,6 +622,7 @@ function process(dialog) {
 // -----------------------------------------------------------------------------
 // Store UI parameters
 function storeUI(dialog) {
+    Settings.write(KEY_VERSION, DataType_String, VERSION);
     Settings.write(KEY_IMAGETYPE, DataType_Int32, dialog.imageType.currentItem);
     Settings.write(KEY_SATURATION_VALUE, DataType_Double, dialog.colorSaturationEdit.value);
     Settings.write(KEY_PROTECTBGR_VALUE, DataType_Double, dialog.protectBackgroundEdit.value);
