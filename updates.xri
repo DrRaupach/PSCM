@@ -13,12 +13,13 @@
          <description>
             <p>
                This script performes mapping of narrow-band stars to RGB stars according to Planck&apos;s law in PixInsight.
-			   
-			   Modifications in Version 1.2 compared with 1.1.6:
+            </p>
+            <p>			   
+			   Modifications in Version 1.2 compared with 1.1.6:<br/>
 			   - Improved background protection, requiring different settings: approx. old parameter divided by 4. The parameter/slider value is automatically recalculated if PSCM is started after updating from V1.1.6.
             </p>
          </description>
       </package>
    </platform>
 </xri>
-<Signature developerId="DrRaupach" timestamp="2026-04-19T15:02:14.507Z" encoding="Base64">bwy1CMxbPpVkXvQ2tQUgxK/977uknl5JWCGN0P6ptk83mgvwRyE2c7OBQ2b2KC+FUGRGNm3hntxlsSlk0SF9Bw==</Signature>
+<Signature developerId="DrRaupach" timestamp="2026-04-19T15:17:44.426Z" encoding="Base64">EgurRYOA0LHhLDU4nZproIYFTKWM/UAPtksyi9IfFqZb0iLopJb4IP2fEcdYq0mmenIWyH+KBA4Cr02oru5xDQ==</Signature>
