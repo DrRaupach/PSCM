@@ -6,16 +6,19 @@
       </p>
    </description>
    <platform os="all" arch="noarch" version="1.9.3:1.9.9">
-      <package fileName="PSCM.zip" sha1="875f0a8d5ac7b4694900e8cf272af7e0ca88c619" type="script" releaseDate="20260222">
+      <package fileName="PSCM.zip" sha1="6cb2fd9d297e835d9b8ede1207dc56da13ec1fe9" type="script" releaseDate="20260419">
          <title>
-            Planck Star Color Mapping (PSCM) - v1.1.6
+            Planck Star Color Mapping (PSCM) - v1.2
          </title>
          <description>
             <p>
                This script performes mapping of narrow-band stars to RGB stars according to Planck&apos;s law in PixInsight.
+			   
+			   Modifications in Version 1.2 compared with 1.1.6:
+			   - Improved background protection, requiring different settings: approx. old parameter divided by 4. The parameter/slider value is automatically recalculated if PSCM is started after updating from V1.1.6.
             </p>
          </description>
       </package>
    </platform>
 </xri>
-<Signature developerId="DrRaupach" timestamp="2026-04-19T12:09:39.409Z" encoding="Base64">V+6MQMTs5bms57NgjupF4gc0Za5cllofbzKIwc9dwCmFFUo7trofmDpyswOoh4eFbstj2l0FlsUJi1w5dew0Dw==</Signature>
+<Signature developerId="DrRaupach" timestamp="2026-04-19T15:02:14.507Z" encoding="Base64">bwy1CMxbPpVkXvQ2tQUgxK/977uknl5JWCGN0P6ptk83mgvwRyE2c7OBQ2b2KC+FUGRGNm3hntxlsSlk0SF9Bw==</Signature>
