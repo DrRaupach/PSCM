@@ -27,7 +27,7 @@ Due to the mathematical properties of the Planck distribution, it is sufficient 
 <li>Apply PSCM to the Star image which transforms the HOO colors to black body colors according to the stars' temperatures.</li>
 <li>Combine the PSCM mapped Stars with the Starless by screening — e.g. using PixelMath by ~(~Starless * ~Stars).</li>
 </ol>
-Voilà! You now have a bi-color HOO image with (almost) naturally colored stars without the need of an additional RGB image, still in lineal domain.<br>
+Voilà! You now have a bi-color HOO image with (almost) naturally colored stars without the need of an additional RGB image, still in linear domain.<br>
 </p><br>
 
 <p>
