@@ -79,7 +79,7 @@ function ScaleImageDialog() {
                         + "7.  Combine the PSCM mapped Stars with the Starless by screening,\n"
                         + "     e.g. using PixelMath by ~(~Starless * ~Stars)\n\n"
                         + "Voilà! You now have a bi-color HOO image with (almost) naturally colored stars\n"
-                        + "without the need of an additional RGB image, still in lineal domain.\n"
+                        + "without the need of an additional RGB image, still in linear domain.\n"
                         + "Continue with stretching and further post-processing as usual.\n\n"
                         + "In general: the wavelengths in SPCC for S|H|O should be 672.4|656.3|500.7\n"
                         + "assigned to the respective filter slot. For RGB, the standard filters can be used.\n";
