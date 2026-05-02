@@ -2,6 +2,7 @@ import sys
 import os
 import sirilpy as s
 import numpy as np
+import math
 
 from collections import namedtuple
 
@@ -16,7 +17,7 @@ from skimage.color import rgb2lab, lab2rgb
 
 # Version information
 TITLE = 'Planck Star Color Mapping (PSCM)'
-VERSION = 'V1.2.0'
+VERSION = 'V1.2.0beta'
 DEVELOPER = 'Dr. Rainer Raupach'
 
 # --- Wavelengths ---
@@ -36,42 +37,116 @@ DEFAULT_SPECTRAL_SPREAD = 1.0
 DENOMINATOR_SPECTRAL_SPREAD = 100
 
 # Image type parameters (combobox name, number of pairs to be used, index matrix for pairs)
-ImageTypePars = namedtuple("ImageTypePars", ["Name", "NoOfPairs", "Pairs"])
+ImageTypePars = namedtuple("ImageTypePars", ["Name", "Wavelength", "NoOfPairs", "Pairs"])
 ImageTypePresets = [
-    ImageTypePars("HOO", 1, ((0,2))),
-    ImageTypePars("HSO", 2, ((0,2),(1,2))),
-    ImageTypePars("SHO", 2, ((0,2),(1,2))),
-    ImageTypePars("RGB", 2, ((0,1),(0,2))),
-    ImageTypePars("RGB (ignore G)", 1, ((0,2)))
+    ImageTypePars("HOO", (LAMBDA_HA, LAMBDA_OIII, LAMBDA_OIII), 1, np.array([0,2]).reshape(-1, 2)),
+    ImageTypePars("HSO", (LAMBDA_HA, LAMBDA_SII, LAMBDA_OIII), 2,  np.array([[0,2],[1,2]]).reshape(-1, 2)),
+    ImageTypePars("SHO", (LAMBDA_SII, LAMBDA_HA, LAMBDA_OIII), 2,  np.array([[0,2],[1,2]]).reshape(-1, 2)),
+    ImageTypePars("RGB", (LAMBDA_R, LAMBDA_G, LAMBDA_B), 2,  np.array([[0,1],[0,2]]).reshape(-1, 2)),
+    ImageTypePars("RGB (ignore G)", (LAMBDA_R, LAMBDA_G, LAMBDA_B), 1,  np.array([0,2]).reshape(-1, 2))
 ]
 
-def rgb2lch(imaRGB):
-    # RGB -> CIE Lab
-    lab = rgb2lab(imaRGB)
-            
-    # Lab -> Lch
-    L = lab[:, :, 0]
-    a = lab[:, :, 1]
-    _b = lab[:, :, 2]
-            
-    C = np.sqrt(a**2 + _b**2)
-    h = np.arctan2(_b, a)
-        
-    return L,C,h        
+def rgb2lch(r, g, b):
+    # --- linear RGB → XYZ (D65) ---
+    X = 0.4124564*r + 0.3575761*g + 0.1804375*b
+    Y = 0.2126729*r + 0.7151522*g + 0.0721750*b
+    Z = 0.0193339*r + 0.1191920*g + 0.9503041*b
+
+    # --- Normalize by D65 white point ---
+    X /= 0.95047
+    Y /= 1.00000
+    Z /= 1.08883
+
+    # --- XYZ → Lab ---
+    def f(t):
+        tp = np.maximum(t, 0)
+        tn = np.maximum(-t, 0)
+        return np.where(t > 0.008856, np.where(t < 0, -np.power(tn, 1.0/3.0), np.power(tp, 1.0/3.0)), 7.787*t + 16.0/116.0)
+
+    fx = f(X)
+    fy = f(Y)
+    fz = f(Z)
+
+    L = 116.0*fy - 16.0
+    a = 500.0*(fx - fy)
+    b2 = 200.0*(fy - fz)
+
+    # --- Lab → LCH ---
+    C = np.sqrt(a*a + b2*b2);
+    h = np.atan2(b2, a) * 180.0 / math.pi;
+    h = np.where(h < 0, h + 360.0, h)
+
+    return L, C, h
 
 def lch2rgb(L, C, h):
-    lab = np.zeros((L.shape[0],L.shape[1],3), dtype=np.float64)
-    lab[:, :, 0] = L
-    lab[:, :, 1] = C * np.cos(h)
-    lab[:, :, 2] = C * np.sin(h)
-            
-    # CIE Lab -> RGB
-    rgb = lab2rgb(lab)
+    # --- LCH → Lab ---
+    hr = h * math.pi / 180.0
+    a = C * np.cos(hr)
+    b = C * np.sin(hr)
+
+    # --- Lab → XYZ ---
+    fy = (L + 16.0) / 116.0
+    fx = fy + a / 500.0
+    fz = fy - b / 200.0
+
+    def finv(t):
+        t3 = t*t*t;
+        return np.where(t3 > 0.008856, t3, (t - 16.0/116.0) / 7.787)
+
+    X = finv(fx)
+    Y = finv(fy)
+    Z = finv(fz)
+
+    # --- Denormalize D65 ---
+    X *= 0.95047
+    Y *= 1.00000
+    Z *= 1.08883
+
+    # --- XYZ → linear RGB ---
+    r =  3.2404542*X - 1.5371385*Y - 0.4985314*Z
+    g = -0.9692660*X + 1.8760108*Y + 0.0415560*Z
+    b2 = 0.0556434*X - 0.2040259*Y + 1.0572252*Z
+
+    rgb = np.zeros((L.shape[0],L.shape[1],3), dtype=np.float64)
+    rgb[:,:,0] = np.clip(r, 0, 1)
+    rgb[:,:,1] = np.clip(g, 0, 1)
+    rgb[:,:,2] = np.clip(b2, 0, 1)
     
     return rgb
         
+def getChForRatio(dbeta):
+    # Returns the color for a given temperature difference in LCh
+    r = np.exp(dbeta/LAMBDA_R)
+    g = np.exp(dbeta/LAMBDA_G)
+    b = np.exp(dbeta/LAMBDA_B)
+    rgbNorm = np.maximum(r, np.maximum(g, b));
+    r /= rgbNorm
+    g /= rgbNorm
+    b /= rgbNorm
+
+    L, C, h = rgb2lch(r, g, b);
+    drgb = 1.0 - r*g*b;
+    drgb *= drgb;
+    Cf = 1.0 - np.exp(-drgb/1e-12);
+
+    return C, h, Cf
+
+def saturationCorrFactor(dbeta, C):
+    CNeutral, hNeutral, _ = getChForRatio(dbeta)
+    cCorrFactor = C / np.maximum(CNeutral, 1e-3);
+    cCorrFactor = np.where(dbeta < 0, np.power(cCorrFactor, 0.5), np.power(cCorrFactor, 2)) # dbeta < 0 means hotter stars
+
+    return cCorrFactor;
+        
 def InitForImageType(imageTypeEntry, mad):
-    a = 1
+    pars = ImageTypePresets[imageTypeEntry]    
+    
+    # sort pairs by mad
+    for n in range(pars.NoOfPairs):
+        if mad[pars.Pairs[n][1]] < mad[pars.Pairs[n][0]]:
+            pars.Pairs[n][0], pars.Pairs[n][1] = pars.Pairs[n][1], pars.Pairs[n][0]
+
+    return pars
         
 
 class PSCM(QWidget):
@@ -306,29 +381,78 @@ class PSCM(QWidget):
 
             # analyze input image
             median, mad = self.analyzeImage(img_normalized)
-                        
+            
+            # get parameters for current image type
+            pars = InitForImageType(self.comboboxImageType.currentIndex(), mad)
+            
+            g = self.sliderProtect.value() / DENOMINATOR_PROTECT_BACKGROUND
+            
+            colorSaturationFactor = self.sliderSaturation.value() / DENOMINATOR_COLOR_SATURATION
+            
+            fSpectralClass = 1.0
+            if self.checkboxUnphysical.isChecked():
+                fSpectralClass = self.sliderSpreading.value() / DENOMINATOR_SPECTRAL_SPREAD
+            
             # RGB -> Lch
-            L,C,h = rgb2lch(img_normalized)
-            
-            # manipulate saturation
-            C_new = C * c_factor
-            
-            # Protect luminance
-            protection_mask = np.clip((100.0 - L) / 30.0, 0, 1) 
-            C_new = C + (C_new - C) * protection_mask
-            
-            # Lch -> RGB
-            rgb_new = lch2rgb(L, C_new, h)
-            
-            # clamp RGB to 0..1
-            new_data = np.clip(rgb_new, 0, 1).astype(np.float32)
+            print('    Converting image to LCh...');
+            L, C, h = rgb2lch(img_normalized[:,:,0],img_normalized[:,:,1],img_normalized[:,:,2])
+
+            # Planck mapping
+            print('    Planck mapping...');
+            match pars.NoOfPairs:
+                case 1:
+                    indexCh0 = pars.Pairs[0][0]
+                    indexCh1 = pars.Pairs[0][1]
+                    
+                    ch0Bgr = median[indexCh0]
+                    ch1Bgr = median[indexCh1]
+
+                    ch0MAD = mad[indexCh0]
+
+                    lambda0 = pars.Wavelength[indexCh0]
+                    lambda1 = pars.Wavelength[indexCh1]
+                    lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1);
+
+                    ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12);
+                    ch1 = img_normalized[:,:,indexCh1] - ch1Bgr;
+
+                    # weighting function (to protect background)
+                    w = 1.0 - np.exp(-ch0*ch0/ch0MAD/ch0MAD/g/g);
+                    
+                    # ch1/ch0 ratio (regularized to 1.0 at low signal)
+                    R = w * np.minimum(np.abs(ch1/ch0), 1.0e3) + (1 - w);
+
+                    # inverse temperature difference
+                    dbeta = np.log(R) * lambdaFactor;
+                    
+                    # calulate Planck color
+                    CPlanck, hPlanck, Cf = getChForRatio(fSpectralClass * dbeta)
+                    
+                    C_new = C;
+                    C_new *= Cf
+                    C_new *= colorSaturationFactor
+                    C_new *= w
+                    if fSpectralClass > 1.0:
+                        C_new *= saturationCorrFactor(dbeta, CPlanck);
+
+                case 2:
+                    self.siril.log('Not yet implemented for NoOfPairs==2.', s.LogColor.RED)
+                    return
+                    
+                case _:
+                    self.siril.log(f'NoOfpairs = {pars.NoOfPairs} not implemented.', s.LogColor.RED)
+                    return
+                        
+            # replace color and convert to RGB
+            print('    Converting image to RGB...')
+            rgb_new = lch2rgb(L, C_new, hPlanck).astype(np.float32)
             
             # revert axis correction if applicable
             if swapped:
-                new_data = np.moveaxis(new_data, -1, 0)
+                rgb_new = np.moveaxis(rgb_new, -1, 0)
             
             # update data and relaod image
-            self._push_to_siril(new_data)
+            self._push_to_siril(rgb_new)
             self.siril.log("PSCM done.", s.LogColor.GREEN)
             
         except Exception as e:
