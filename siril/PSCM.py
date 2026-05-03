@@ -1,3 +1,9 @@
+# =========================================================================================================
+# Planck Star Color Mapping (PSCM)
+# Maps HOO/HSO/SHO/... stars to naturally colored stars using Planck's law of black body radiation.
+# Copyright (C) 2026 Dr. Rainer Raupach
+# =========================================================================================================
+
 import sys
 import os
 import sirilpy as s
@@ -7,17 +13,12 @@ import math
 from collections import namedtuple
 
 s.ensure_installed("PyQt6")
-s.ensure_installed("scikit-image")
-
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider, QPushButton, QComboBox, QCheckBox, QFrame, QTextBrowser
 from PyQt6.QtCore import Qt
 
-# algorithms for color conversion
-from skimage.color import rgb2lab, lab2rgb
-
 # Version information
 TITLE = 'Planck Star Color Mapping (PSCM)'
-VERSION = 'V1.2.0beta'
+VERSION = 'V1.0beta'
 DEVELOPER = 'Dr. Rainer Raupach'
 
 # --- Wavelengths ---
@@ -43,7 +44,7 @@ ImageTypePresets = [
     ImageTypePars("HSO", (LAMBDA_HA, LAMBDA_SII, LAMBDA_OIII), 2,  np.array([[0,2],[1,2]]).reshape(-1, 2)),
     ImageTypePars("SHO", (LAMBDA_SII, LAMBDA_HA, LAMBDA_OIII), 2,  np.array([[0,2],[1,2]]).reshape(-1, 2)),
     ImageTypePars("RGB", (LAMBDA_R, LAMBDA_G, LAMBDA_B), 2,  np.array([[0,1],[0,2]]).reshape(-1, 2)),
-    ImageTypePars("RGB (ignore G)", (LAMBDA_R, LAMBDA_G, LAMBDA_B), 1,  np.array([0,2]).reshape(-1, 2))
+    ImageTypePars("RGB (ignore G)", (LAMBDA_R, LAMBDA_G, LAMBDA_B), 1,  np.array([0,2]).reshape(-1, 2)),
 ]
 
 def rgb2lch(r, g, b):
@@ -52,7 +53,7 @@ def rgb2lch(r, g, b):
     Y = 0.2126729*r + 0.7151522*g + 0.0721750*b
     Z = 0.0193339*r + 0.1191920*g + 0.9503041*b
 
-    # --- Normalize by D65 white point ---
+    # --- normalize by D65 white point ---
     X /= 0.95047
     Y /= 1.00000
     Z /= 1.08883
@@ -97,7 +98,7 @@ def lch2rgb(L, C, h):
     Y = finv(fy)
     Z = finv(fz)
 
-    # --- Denormalize D65 ---
+    # --- denormalize D65 ---
     X *= 0.95047
     Y *= 1.00000
     Z *= 1.08883
@@ -115,7 +116,7 @@ def lch2rgb(L, C, h):
     return rgb
         
 def getChForRatio(dbeta):
-    # Returns the color for a given temperature difference in LCh
+    # returns the color for a given temperature difference in LCh
     r = np.exp(dbeta/LAMBDA_R)
     g = np.exp(dbeta/LAMBDA_G)
     b = np.exp(dbeta/LAMBDA_B)
@@ -124,7 +125,8 @@ def getChForRatio(dbeta):
     g /= rgbNorm
     b /= rgbNorm
 
-    L, C, h = rgb2lch(r, g, b);
+    _, C, h = rgb2lch(r, g, b);
+    
     drgb = 1.0 - r*g*b;
     drgb *= drgb;
     Cf = 1.0 - np.exp(-drgb/1e-12);
@@ -394,13 +396,15 @@ class PSCM(QWidget):
                 fSpectralClass = self.sliderSpreading.value() / DENOMINATOR_SPECTRAL_SPREAD
             
             # RGB -> Lch
-            print('    Converting image to LCh...');
+            self.siril.log('    Converting image to LCh...');
             L, C, h = rgb2lch(img_normalized[:,:,0],img_normalized[:,:,1],img_normalized[:,:,2])
 
             # Planck mapping
-            print('    Planck mapping...');
+            self.siril.log('    Planck mapping...');
+            self.siril.log(f'    Preset {pars.Name}: {pars.NoOfPairs} pair(s) of channels to be processed.')
             match pars.NoOfPairs:
-                case 1:
+                # one pair seperated for speed and memory
+                case 1: 
                     indexCh0 = pars.Pairs[0][0]
                     indexCh1 = pars.Pairs[0][1]
                     
@@ -411,40 +415,75 @@ class PSCM(QWidget):
 
                     lambda0 = pars.Wavelength[indexCh0]
                     lambda1 = pars.Wavelength[indexCh1]
-                    lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1);
+                    self.siril.log(f'    Pair 0: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
+                    lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1)
 
-                    ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12);
-                    ch1 = img_normalized[:,:,indexCh1] - ch1Bgr;
+                    ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12)
+                    ch1 = img_normalized[:,:,indexCh1] - ch1Bgr
 
                     # weighting function (to protect background)
-                    w = 1.0 - np.exp(-ch0*ch0/ch0MAD/ch0MAD/g/g);
+                    w = 1.0 - np.exp(-ch0*ch0/ch0MAD/ch0MAD/g/g)
                     
                     # ch1/ch0 ratio (regularized to 1.0 at low signal)
-                    R = w * np.minimum(np.abs(ch1/ch0), 1.0e3) + (1 - w);
+                    R = w * np.minimum(np.abs(ch1/ch0), 1.0e3) + (1 - w)
 
                     # inverse temperature difference
-                    dbeta = np.log(R) * lambdaFactor;
+                    dbeta = np.log(R) * lambdaFactor
                     
-                    # calulate Planck color
-                    CPlanck, hPlanck, Cf = getChForRatio(fSpectralClass * dbeta)
-                    
-                    C_new = C;
-                    C_new *= Cf
-                    C_new *= colorSaturationFactor
-                    C_new *= w
-                    if fSpectralClass > 1.0:
-                        C_new *= saturationCorrFactor(dbeta, CPlanck);
-
-                case 2:
-                    self.siril.log('Not yet implemented for NoOfPairs==2.', s.LogColor.RED)
-                    return
-                    
+                # any case with number of pairs larger than one
                 case _:
-                    self.siril.log(f'NoOfpairs = {pars.NoOfPairs} not implemented.', s.LogColor.RED)
-                    return
+                    w = np.ones((img_normalized.shape[0], img_normalized.shape[1]), dtype=np.float64) # must be initialized with 1
+                    vinv_total = np.zeros((img_normalized.shape[0], img_normalized.shape[1]), dtype=np.float64)
+                    dbeta = np.zeros((img_normalized.shape[0], img_normalized.shape[1]), dtype=np.float64)
+                    
+                    for n in range(pars.NoOfPairs):
+                        indexCh0 = pars.Pairs[n][0]
+                        indexCh1 = pars.Pairs[n][1]
+                    
+                        ch0Bgr = median[indexCh0]
+                        ch1Bgr = median[indexCh1]
+
+                        ch0MAD = mad[indexCh0]
+                        ch1MAD = mad[indexCh1]
+                    
+                        lambda0 = pars.Wavelength[indexCh0]
+                        lambda1 = pars.Wavelength[indexCh1]
+                        self.siril.log(f'    Pair {n}: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
+                        lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1)
+                    
+                        ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12)
+                        ch1 = img_normalized[:,:,indexCh1] - ch1Bgr
                         
+                        # weighting function (to protect background)
+                        wn = 1.0 - np.exp(-ch0*ch0/ch0MAD/ch0MAD/g/g)
+                        w = np.minimum(w, wn)
+                        
+                        # ch1/ch0 ratio (regularized to 1.0 at low signal)
+                        R = wn * np.minimum(np.abs(ch1/ch0), 1.0e3) + (1 - wn)
+                        
+                        # prepare variance weighted mixing
+                        vinv = np.maximum(lambdaFactor*lambdaFactor/R/R*(ch0MAD*ch0MAD/ch0/ch0 + ch1MAD*ch1MAD/ch1/ch1), 1e-12)
+                        vinv_total += vinv
+                        
+                        # inverse temperature difference
+                        dbeta += np.log(R) * lambdaFactor * vinv
+                        
+                    # normalize temperature difference
+                    dbeta /= vinv_total
+                                            
+            # calculate Planck color
+            CPlanck, hPlanck, Cf = getChForRatio(fSpectralClass * dbeta)
+                
+            # adjust color saturation
+            C_new = C;
+            C_new *= Cf
+            C_new *= colorSaturationFactor
+            C_new *= w
+            if fSpectralClass > 1.0:
+                C_new *= saturationCorrFactor(dbeta, CPlanck);
+
             # replace color and convert to RGB
-            print('    Converting image to RGB...')
+            self.siril.log('    Converting image to RGB...')
             rgb_new = lch2rgb(L, C_new, hPlanck).astype(np.float32)
             
             # revert axis correction if applicable
@@ -460,10 +499,10 @@ class PSCM(QWidget):
 
     def undo_changes(self):
         try:
-            print("Undoing PSCM...")
+            self.siril.log("Undoing PSCM...")
             # restore original image
             self._push_to_siril(self.original_data)
-            print("Undo done.")
+            self.siril.log("Undo done.")
         except Exception as e:
             self.siril.log(f"Error during undo: {e}", s.LogColor.RED)
 
