@@ -16,10 +16,18 @@ s.ensure_installed("PyQt6")
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider, QPushButton, QComboBox, QCheckBox, QFrame, QTextBrowser
 from PyQt6.QtCore import Qt
 
-# Version information
+# --- Version information ---
 TITLE = 'Planck Star Color Mapping (PSCM)'
 VERSION = 'V1.0beta'
 DEVELOPER = 'Dr. Rainer Raupach'
+
+# --- Default values ---
+DEFAULT_COLOR_SATURATION = 1.0
+DENOMINATOR_COLOR_SATURATION = 100
+DEFAULT_PROTECT_BACKGROUND = 1.5
+DENOMINATOR_PROTECT_BACKGROUND = 10
+DEFAULT_SPECTRAL_SPREAD = 1.0
+DENOMINATOR_SPECTRAL_SPREAD = 100
 
 # --- Wavelengths ---
 LAMBDA_SII = 672.4
@@ -29,13 +37,31 @@ LAMBDA_R = 622.0
 LAMBDA_G = 530.0
 LAMBDA_B = 476.0
 
-# Default values
-DEFAULT_COLOR_SATURATION = 1.0
-DENOMINATOR_COLOR_SATURATION = 100
-DEFAULT_PROTECT_BACKGROUND = 1.5
-DENOMINATOR_PROTECT_BACKGROUND = 10
-DEFAULT_SPECTRAL_SPREAD = 1.0
-DENOMINATOR_SPECTRAL_SPREAD = 100
+# --- UI element styles ---
+SLIDER_STYLE = """
+            QSlider::groove:horizontal {
+                border: 1px solid #999999;
+                height: 4px;
+                background: #cccccc;
+                margin: 0px 0;
+                border-radius: 2px;
+            }
+            QSlider::handle:horizontal {
+                background: #0078d7;
+                border: 1px solid #005a9e;
+                width: 15px;
+                height: 15px;
+                margin: -7px 0;
+                border-radius: 7.5px;
+            }
+            QSlider::handle:horizontal:hover {
+                background: #005a9e;
+            }
+            QSlider::handle:horizontal:disabled {
+                background: #a0a0a0;
+                border: 1px solid #808080;
+            }
+        """
 
 # Image type parameters (combobox name, number of pairs to be used, index matrix for pairs)
 ImageTypePars = namedtuple("ImageTypePars", ["Name", "Wavelength", "NoOfPairs", "Pairs"])
@@ -73,8 +99,8 @@ def rgb2lch(r, g, b):
     b2 = 200.0*(fy - fz)
 
     # --- Lab → LCH ---
-    C = np.sqrt(a*a + b2*b2);
-    h = np.atan2(b2, a) * 180.0 / math.pi;
+    C = np.sqrt(a*a + b2*b2)
+    h = np.atan2(b2, a) * 180.0 / math.pi
     h = np.where(h < 0, h + 360.0, h)
 
     return L, C, h
@@ -91,7 +117,7 @@ def lch2rgb(L, C, h):
     fz = fy - b / 200.0
 
     def finv(t):
-        t3 = t*t*t;
+        t3 = t*t*t
         return np.where(t3 > 0.008856, t3, (t - 16.0/116.0) / 7.787)
 
     X = finv(fx)
@@ -120,25 +146,25 @@ def getChForRatio(dbeta):
     r = np.exp(dbeta/LAMBDA_R)
     g = np.exp(dbeta/LAMBDA_G)
     b = np.exp(dbeta/LAMBDA_B)
-    rgbNorm = np.maximum(r, np.maximum(g, b));
+    rgbNorm = np.maximum(r, np.maximum(g, b))
     r /= rgbNorm
     g /= rgbNorm
     b /= rgbNorm
 
-    _, C, h = rgb2lch(r, g, b);
+    _, C, h = rgb2lch(r, g, b)
     
-    drgb = 1.0 - r*g*b;
-    drgb *= drgb;
-    Cf = 1.0 - np.exp(-drgb/1e-12);
+    drgb = 1.0 - r*g*b
+    drgb *= drgb
+    Cf = 1.0 - np.exp(-drgb/1e-12)
 
     return C, h, Cf
 
 def saturationCorrFactor(dbeta, C):
     CNeutral, hNeutral, _ = getChForRatio(dbeta)
-    cCorrFactor = C / np.maximum(CNeutral, 1e-3);
+    cCorrFactor = C / np.maximum(CNeutral, 1e-3)
     cCorrFactor = np.where(dbeta < 0, np.power(cCorrFactor, 0.5), np.power(cCorrFactor, 2)) # dbeta < 0 means hotter stars
 
-    return cCorrFactor;
+    return cCorrFactor
         
 def InitForImageType(imageTypeEntry, mad):
     pars = ImageTypePresets[imageTypeEntry]    
@@ -166,8 +192,16 @@ class PSCM(QWidget):
         
         self.initUI()
         
-    def initUI(self):
-        self.setWindowTitle(f'{TITLE}')        
+    def initUI(self):        
+        self.setWindowTitle(f'{TITLE}')
+        
+        #self.setStyleSheet("""
+        #    QWidget {
+        #        background-color: #2d2d2d;
+        #        color: #efefef;
+        #        border: none;
+        #    }
+        #""")
         
         layout = QVBoxLayout()
         
@@ -258,6 +292,7 @@ class PSCM(QWidget):
         self.sliderSaturation.setRange(0, 200) # 0.0 to 2.0
         self.sliderSaturation.setValue(int(DEFAULT_COLOR_SATURATION * DENOMINATOR_COLOR_SATURATION))
         self.sliderSaturation.valueChanged.connect(self.update_saturation)
+        self.sliderSaturation.setStyleSheet(SLIDER_STYLE)        
         parameter_Saturation.addWidget(self.sliderSaturation)
         
         layout.addLayout(parameter_Saturation)        
@@ -274,8 +309,8 @@ class PSCM(QWidget):
         self.sliderProtect.setRange(5, 120) # 0.5 to 12.0
         self.sliderProtect.setValue(int(DEFAULT_PROTECT_BACKGROUND * DENOMINATOR_PROTECT_BACKGROUND))
         self.sliderProtect.valueChanged.connect(self.update_protect)
-        parameter_Protect.addWidget(self.sliderProtect)
-                
+        self.sliderProtect.setStyleSheet(SLIDER_STYLE)
+        parameter_Protect.addWidget(self.sliderProtect)                
         layout.addLayout(parameter_Protect)        
         
         # Unphysical checkbox
@@ -306,6 +341,7 @@ class PSCM(QWidget):
         self.sliderSpreading.setRange(100, 200) # 1.0 to 2.0
         self.sliderSpreading.setValue(int(DEFAULT_SPECTRAL_SPREAD * DENOMINATOR_SPECTRAL_SPREAD))
         self.sliderSpreading.valueChanged.connect(self.update_spreading)
+        self.sliderSpreading.setStyleSheet(SLIDER_STYLE)
         parameter_Spreading.addWidget(self.sliderSpreading)
         
         layout_Unphysical.addLayout(parameter_Spreading)
@@ -323,7 +359,7 @@ class PSCM(QWidget):
         btn_layout.addWidget(btn_undo)
         
         btn_apply = QPushButton('Apply PSCM')
-        btn_apply.clicked.connect(self.applySPCM)
+        btn_apply.clicked.connect(self.applyPSCM)
         btn_layout.addWidget(btn_apply)
         
         layout.addLayout(btn_layout)
@@ -356,15 +392,14 @@ class PSCM(QWidget):
             median[n] = np.median(imaRGB[:,:,n])
             mad[n] = np.median(np.abs(imaRGB[:,:,n] - median[n]))
             
-        self.siril.log(f'    Median = {median}')
-        self.siril.log(f'    MAD    = {mad}')
+        self.siril.log(f' > Median = {median}')
+        self.siril.log(f' > MAD    = {mad}')
             
         return median, mad
 
-    def applySPCM(self):
+    def applyPSCM(self):
         try:
             self.siril.log("Applying PSCM...", s.LogColor.GREEN)
-            c_factor = self.sliderSaturation.value() / 100.0
             
             # clone image data and clamp to 0..1
             img_normalized = np.clip(self.original_data, 0, 1).astype(np.float64)
@@ -379,7 +414,7 @@ class PSCM(QWidget):
             if img_normalized.shape[0] == 3 and len(img_normalized.shape) == 3:
                 img_normalized = np.moveaxis(img_normalized, 0, -1)
                 swapped = True
-            self.siril.log(f'    Image size: {img_normalized.shape[1]} x {img_normalized.shape[0]} x {img_normalized.shape[2]}');
+            self.siril.log(f' > Image size: {img_normalized.shape[1]} x {img_normalized.shape[0]} x {img_normalized.shape[2]}')
 
             # analyze input image
             median, mad = self.analyzeImage(img_normalized)
@@ -396,12 +431,12 @@ class PSCM(QWidget):
                 fSpectralClass = self.sliderSpreading.value() / DENOMINATOR_SPECTRAL_SPREAD
             
             # RGB -> Lch
-            self.siril.log('    Converting image to LCh...');
+            self.siril.log(' > Converting image to LCh...')
             L, C, h = rgb2lch(img_normalized[:,:,0],img_normalized[:,:,1],img_normalized[:,:,2])
 
             # Planck mapping
-            self.siril.log('    Planck mapping...');
-            self.siril.log(f'    Preset {pars.Name}: {pars.NoOfPairs} pair(s) of channels to be processed.')
+            self.siril.log(' > Planck mapping...')
+            self.siril.log(f' > Preset {pars.Name}: {pars.NoOfPairs} pair(s) of channels to be processed.')
             match pars.NoOfPairs:
                 # one pair seperated for speed and memory
                 case 1: 
@@ -415,7 +450,7 @@ class PSCM(QWidget):
 
                     lambda0 = pars.Wavelength[indexCh0]
                     lambda1 = pars.Wavelength[indexCh1]
-                    self.siril.log(f'    Pair 0: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
+                    self.siril.log(f' > Pair 0: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
                     lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1)
 
                     ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12)
@@ -448,7 +483,7 @@ class PSCM(QWidget):
                     
                         lambda0 = pars.Wavelength[indexCh0]
                         lambda1 = pars.Wavelength[indexCh1]
-                        self.siril.log(f'    Pair {n}: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
+                        self.siril.log(f' > Pair {n}: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
                         lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1)
                     
                         ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12)
@@ -475,15 +510,15 @@ class PSCM(QWidget):
             CPlanck, hPlanck, Cf = getChForRatio(fSpectralClass * dbeta)
                 
             # adjust color saturation
-            C_new = C;
+            C_new = C
             C_new *= Cf
             C_new *= colorSaturationFactor
             C_new *= w
             if fSpectralClass > 1.0:
-                C_new *= saturationCorrFactor(dbeta, CPlanck);
+                C_new *= saturationCorrFactor(dbeta, CPlanck)
 
             # replace color and convert to RGB
-            self.siril.log('    Converting image to RGB...')
+            self.siril.log(' > Converting image to RGB...')
             rgb_new = lch2rgb(L, C_new, hPlanck).astype(np.float32)
             
             # revert axis correction if applicable
