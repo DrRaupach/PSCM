@@ -10,16 +10,25 @@ import sirilpy as s
 import numpy as np
 import math
 
+from pathlib import Path
 from collections import namedtuple
 
 s.ensure_installed("PyQt6")
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSlider, QPushButton, QComboBox, QCheckBox, QFrame, QTextBrowser
 from PyQt6.QtCore import Qt
 
-# Version information
+# --- Version information ---
 TITLE = 'Planck Star Color Mapping (PSCM)'
-VERSION = 'V1.0beta'
+VERSION = 'V1.2beta'
 DEVELOPER = 'Dr. Rainer Raupach'
+
+# --- Default values ---
+DEFAULT_COLOR_SATURATION = 1.0
+DENOMINATOR_COLOR_SATURATION = 100
+DEFAULT_PROTECT_BACKGROUND = 1.5
+DENOMINATOR_PROTECT_BACKGROUND = 10
+DEFAULT_SPECTRAL_SPREAD = 1.0
+DENOMINATOR_SPECTRAL_SPREAD = 100
 
 # --- Wavelengths ---
 LAMBDA_SII = 672.4
@@ -29,13 +38,81 @@ LAMBDA_R = 622.0
 LAMBDA_G = 530.0
 LAMBDA_B = 476.0
 
-# Default values
-DEFAULT_COLOR_SATURATION = 1.0
-DENOMINATOR_COLOR_SATURATION = 100
-DEFAULT_PROTECT_BACKGROUND = 1.5
-DENOMINATOR_PROTECT_BACKGROUND = 10
-DEFAULT_SPECTRAL_SPREAD = 1.0
-DENOMINATOR_SPECTRAL_SPREAD = 100
+# --- UI element styles ---
+SHEET_STYLE = """
+    QWidget {
+        background-color: #2d2d2d;
+        color: #efefef;
+        border: none;
+    }
+    QMainWindow { background-color: #2d2d2d; }
+    QLabel { color: #eeeeee; font-size: 14px; }
+    QPushButton { 
+        background-color: #4a4a4a; 
+        color: #eeeeee; 
+        border: 1px solid #5a5a5a;
+        padding: 8px;
+        border-radius: 4px;
+    }
+    QPushButton:hover { background-color: #5a5a5a; }        
+"""
+
+SLIDER_STYLE = """
+    QSlider::groove:horizontal {
+        border: 1px solid #5a5a5a;
+        height: 4px;
+        background: #3d3d3d;
+        margin: 0px 0;
+        border-radius: 2px;
+    }
+    QSlider::groove:horizontal:disabled {
+        border-color: #3d3d3d;
+    }
+    QSlider::handle:horizontal {
+        background: #0078d7;
+        border: 1px solid #005a9e;
+        width: 15px;
+        height: 15px;
+        margin: -7px 0;
+        border-radius: 7.5px;
+    }
+    QSlider::handle:horizontal:hover {
+        background: #005a9e;
+    }
+    QSlider::handle:horizontal:disabled {
+        background: #3d3d3d;
+        border: 1px solid #2d2d2d;
+    }
+    QSlider::sub-page:horizontal {
+        background: #0078d4;
+        border: 1px solid #808080;
+        height: 6px;
+        border-radius: 3px;
+    }    
+    QSlider::sub-page:horizontal:disabled {
+        background: #3d3d3d; 
+        border-color: #3d3d3d;
+    }
+"""
+        
+COMBOBOX_STYLE = """
+    QComboBox {
+        background-color: #3d3d3d;
+        color: #eeeeee;
+        border: 1px solid #5a5a5a;
+        padding: 5px;
+    }
+    QComboBox QAbstractItemView {
+        background-color: #2d2d2d;
+        color: #eeeeee;
+        selection-background-color: #4a4a4a;
+        selection-color: #ffffff;
+        border: 1px solid #5a5a5a;
+    }
+"""
+
+LABEL_WIDTH = 220
+EDITOR_WIDTH = 250
 
 # Image type parameters (combobox name, number of pairs to be used, index matrix for pairs)
 ImageTypePars = namedtuple("ImageTypePars", ["Name", "Wavelength", "NoOfPairs", "Pairs"])
@@ -73,8 +150,8 @@ def rgb2lch(r, g, b):
     b2 = 200.0*(fy - fz)
 
     # --- Lab → LCH ---
-    C = np.sqrt(a*a + b2*b2);
-    h = np.atan2(b2, a) * 180.0 / math.pi;
+    C = np.sqrt(a*a + b2*b2)
+    h = np.atan2(b2, a) * 180.0 / math.pi
     h = np.where(h < 0, h + 360.0, h)
 
     return L, C, h
@@ -91,7 +168,7 @@ def lch2rgb(L, C, h):
     fz = fy - b / 200.0
 
     def finv(t):
-        t3 = t*t*t;
+        t3 = t*t*t
         return np.where(t3 > 0.008856, t3, (t - 16.0/116.0) / 7.787)
 
     X = finv(fx)
@@ -120,25 +197,25 @@ def getChForRatio(dbeta):
     r = np.exp(dbeta/LAMBDA_R)
     g = np.exp(dbeta/LAMBDA_G)
     b = np.exp(dbeta/LAMBDA_B)
-    rgbNorm = np.maximum(r, np.maximum(g, b));
+    rgbNorm = np.maximum(r, np.maximum(g, b))
     r /= rgbNorm
     g /= rgbNorm
     b /= rgbNorm
 
-    _, C, h = rgb2lch(r, g, b);
+    _, C, h = rgb2lch(r, g, b)
     
-    drgb = 1.0 - r*g*b;
-    drgb *= drgb;
-    Cf = 1.0 - np.exp(-drgb/1e-12);
+    drgb = 1.0 - r*g*b
+    drgb *= drgb
+    Cf = 1.0 - np.exp(-drgb/1e-12)
 
     return C, h, Cf
 
 def saturationCorrFactor(dbeta, C):
     CNeutral, hNeutral, _ = getChForRatio(dbeta)
-    cCorrFactor = C / np.maximum(CNeutral, 1e-3);
+    cCorrFactor = C / np.maximum(CNeutral, 1e-3)
     cCorrFactor = np.where(dbeta < 0, np.power(cCorrFactor, 0.5), np.power(cCorrFactor, 2)) # dbeta < 0 means hotter stars
 
-    return cCorrFactor;
+    return cCorrFactor
         
 def InitForImageType(imageTypeEntry, mad):
     pars = ImageTypePresets[imageTypeEntry]    
@@ -166,23 +243,40 @@ class PSCM(QWidget):
         
         self.initUI()
         
-    def initUI(self):
+    def initUI(self):        
         self.setWindowTitle(f'{TITLE}')        
+        self.setStyleSheet(SHEET_STYLE)
         
         layout = QVBoxLayout()
         
         # UI elements
         # Script information
         scriptInfo = QTextBrowser()
-        scriptInfo.setStyleSheet("""
-            QTextBrowser {
-                background-color: #f0f0f0;
-                border: 1px solid #000000;
-            }
+        scriptInfo.setStyleSheet(f"""
+            QTextBrowser {{
+                background-color: transparent;
+                border: 1px solid #5a5a5a;
+                font-size: 14px;
+                color: #eeeeee;
+            }}
         """)
+        
+        script_dir = Path(__file__).parent.absolute()
+        image_location = os.path.join(script_dir, "PlanckColorBar.png").replace("\\", "/")       
+        if Path(image_location).exists():
+            scriptInfo.setStyleSheet(f"""
+                QTextBrowser {{
+                    background-color: transparent;
+                    border: 1px solid #5a5a5a;
+                    font-size: 14px;
+                    color: #000000;
+                    background-image: url("{image_location}");
+                }}
+            """)
+            
         scriptInfo.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scriptInfo.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scriptInfo.setFixedHeight(42)
+        scriptInfo.setFixedHeight(48)
         scriptInfo.setHtml('<p><strong>' + TITLE + ' version ' + VERSION + '</strong><br/>' + 'Copyright &copy; 2026 ' + DEVELOPER + '</p>')
         layout.addWidget(scriptInfo)        
         
@@ -190,8 +284,9 @@ class PSCM(QWidget):
         howtoInfo = QTextBrowser()
         howtoInfo.setStyleSheet("""
             QTextBrowser {
-                background-color: transparent;
-                border: 0px solid #000000;
+                background-color: #1d1d1d;
+                border: 0px solid #efefef;
+                padding: 5px;
             }
         """)
         howtoInfo.setHtml("""
@@ -225,7 +320,7 @@ class PSCM(QWidget):
         """)
         howtoInfo.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         howtoInfo.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        howtoInfo.setFixedHeight(360)
+        howtoInfo.setFixedHeight(365)
         
         layout.addWidget(howtoInfo)        
         
@@ -234,11 +329,12 @@ class PSCM(QWidget):
         
         self.labelImageType = QLabel('Input Image Type')
         #self.labelImageType.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelImageType.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelImageType.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_ImageType.addWidget(self.labelImageType)
         
         self.comboboxImageType = QComboBox()
-        self.comboboxImageType.setFixedWidth(250)
+        self.comboboxImageType.setFixedWidth(EDITOR_WIDTH)
+        self.comboboxImageType.setStyleSheet(COMBOBOX_STYLE)
         for i in range(len(ImageTypePresets)):
             self.comboboxImageType.addItem(ImageTypePresets[i].Name)
         #self.comboboxImageType.currentIndexChanged.connect(self.on_item_clicked) # needed if reaction to item change required
@@ -251,13 +347,14 @@ class PSCM(QWidget):
         
         self.labelSaturation = QLabel(f'Color Saturation Factor: {DEFAULT_COLOR_SATURATION: .2f}')
         #self.labelSaturation.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelSaturation.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelSaturation.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_Saturation.addWidget(self.labelSaturation)
         
         self.sliderSaturation = QSlider(Qt.Orientation.Horizontal)
         self.sliderSaturation.setRange(0, 200) # 0.0 to 2.0
         self.sliderSaturation.setValue(int(DEFAULT_COLOR_SATURATION * DENOMINATOR_COLOR_SATURATION))
         self.sliderSaturation.valueChanged.connect(self.update_saturation)
+        self.sliderSaturation.setStyleSheet(SLIDER_STYLE)        
         parameter_Saturation.addWidget(self.sliderSaturation)
         
         layout.addLayout(parameter_Saturation)        
@@ -267,15 +364,15 @@ class PSCM(QWidget):
         
         self.labelProtect = QLabel(f'Protect Background (X*MAD): {DEFAULT_PROTECT_BACKGROUND: .2f}')
         #self.labelProtect.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelProtect.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelProtect.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_Protect.addWidget(self.labelProtect)
         
         self.sliderProtect = QSlider(Qt.Orientation.Horizontal)
         self.sliderProtect.setRange(5, 120) # 0.5 to 12.0
         self.sliderProtect.setValue(int(DEFAULT_PROTECT_BACKGROUND * DENOMINATOR_PROTECT_BACKGROUND))
         self.sliderProtect.valueChanged.connect(self.update_protect)
-        parameter_Protect.addWidget(self.sliderProtect)
-                
+        self.sliderProtect.setStyleSheet(SLIDER_STYLE)
+        parameter_Protect.addWidget(self.sliderProtect)                
         layout.addLayout(parameter_Protect)        
         
         # Unphysical checkbox
@@ -290,7 +387,9 @@ class PSCM(QWidget):
         
         # Unphysical section
         self.sectionUnphysical = QFrame()
+        self.sectionUnphysical.setObjectName("UnphysicalFrame")
         self.sectionUnphysical.setFrameShape(QFrame.Shape.StyledPanel)
+        self.sectionUnphysical.setStyleSheet("#UnphysicalFrame { border: 1px solid #5a5a5a; }")
         
         layout_Unphysical = QVBoxLayout()  
         
@@ -299,13 +398,14 @@ class PSCM(QWidget):
         
         self.labelSpreading = QLabel(f'Spread Spectral Classes by: {DEFAULT_SPECTRAL_SPREAD: .2f}')
         #self.labelSpreading.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelSpreading.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelSpreading.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_Spreading.addWidget(self.labelSpreading)
         
         self.sliderSpreading = QSlider(Qt.Orientation.Horizontal)
         self.sliderSpreading.setRange(100, 200) # 1.0 to 2.0
         self.sliderSpreading.setValue(int(DEFAULT_SPECTRAL_SPREAD * DENOMINATOR_SPECTRAL_SPREAD))
         self.sliderSpreading.valueChanged.connect(self.update_spreading)
+        self.sliderSpreading.setStyleSheet(SLIDER_STYLE)
         parameter_Spreading.addWidget(self.sliderSpreading)
         
         layout_Unphysical.addLayout(parameter_Spreading)
@@ -323,13 +423,14 @@ class PSCM(QWidget):
         btn_layout.addWidget(btn_undo)
         
         btn_apply = QPushButton('Apply PSCM')
-        btn_apply.clicked.connect(self.applySPCM)
+        btn_apply.clicked.connect(self.applyPSCM)
         btn_layout.addWidget(btn_apply)
         
         layout.addLayout(btn_layout)
         
         self.setLayout(layout)
-        self.resize(400, 140)
+        self.show() # Fenster kurz "aktivieren"
+        self.setFixedSize(498, 646)
         
     def update_saturation(self, value):
         c_factor = value / DENOMINATOR_COLOR_SATURATION
@@ -356,15 +457,14 @@ class PSCM(QWidget):
             median[n] = np.median(imaRGB[:,:,n])
             mad[n] = np.median(np.abs(imaRGB[:,:,n] - median[n]))
             
-        self.siril.log(f'    Median = {median}')
-        self.siril.log(f'    MAD    = {mad}')
+        self.siril.log(f' > Median = {median}')
+        self.siril.log(f' > MAD    = {mad}')
             
         return median, mad
 
-    def applySPCM(self):
+    def applyPSCM(self):
         try:
             self.siril.log("Applying PSCM...", s.LogColor.GREEN)
-            c_factor = self.sliderSaturation.value() / 100.0
             
             # clone image data and clamp to 0..1
             img_normalized = np.clip(self.original_data, 0, 1).astype(np.float64)
@@ -379,7 +479,7 @@ class PSCM(QWidget):
             if img_normalized.shape[0] == 3 and len(img_normalized.shape) == 3:
                 img_normalized = np.moveaxis(img_normalized, 0, -1)
                 swapped = True
-            self.siril.log(f'    Image size: {img_normalized.shape[1]} x {img_normalized.shape[0]} x {img_normalized.shape[2]}');
+            self.siril.log(f' > Image size: {img_normalized.shape[1]} x {img_normalized.shape[0]} x {img_normalized.shape[2]}')
 
             # analyze input image
             median, mad = self.analyzeImage(img_normalized)
@@ -396,12 +496,12 @@ class PSCM(QWidget):
                 fSpectralClass = self.sliderSpreading.value() / DENOMINATOR_SPECTRAL_SPREAD
             
             # RGB -> Lch
-            self.siril.log('    Converting image to LCh...');
+            self.siril.log(' > Converting image to LCh...')
             L, C, h = rgb2lch(img_normalized[:,:,0],img_normalized[:,:,1],img_normalized[:,:,2])
 
             # Planck mapping
-            self.siril.log('    Planck mapping...');
-            self.siril.log(f'    Preset {pars.Name}: {pars.NoOfPairs} pair(s) of channels to be processed.')
+            self.siril.log(' > Planck mapping...')
+            self.siril.log(f' > Preset {pars.Name}: {pars.NoOfPairs} pair(s) of channels to be processed.')
             match pars.NoOfPairs:
                 # one pair seperated for speed and memory
                 case 1: 
@@ -415,7 +515,7 @@ class PSCM(QWidget):
 
                     lambda0 = pars.Wavelength[indexCh0]
                     lambda1 = pars.Wavelength[indexCh1]
-                    self.siril.log(f'    Pair 0: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
+                    self.siril.log(f' > Pair 0: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
                     lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1)
 
                     ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12)
@@ -448,7 +548,7 @@ class PSCM(QWidget):
                     
                         lambda0 = pars.Wavelength[indexCh0]
                         lambda1 = pars.Wavelength[indexCh1]
-                        self.siril.log(f'    Pair {n}: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
+                        self.siril.log(f' > Pair {n}: ({indexCh0},{indexCh1}) -> ({lambda0},{lambda1}) nm')
                         lambdaFactor = lambda0*lambda1 / (lambda0 - lambda1)
                     
                         ch0 = np.maximum(img_normalized[:,:,indexCh0] - ch0Bgr, 1.0e-12)
@@ -475,15 +575,15 @@ class PSCM(QWidget):
             CPlanck, hPlanck, Cf = getChForRatio(fSpectralClass * dbeta)
                 
             # adjust color saturation
-            C_new = C;
+            C_new = C
             C_new *= Cf
             C_new *= colorSaturationFactor
             C_new *= w
             if fSpectralClass > 1.0:
-                C_new *= saturationCorrFactor(dbeta, CPlanck);
+                C_new *= saturationCorrFactor(dbeta, CPlanck)
 
             # replace color and convert to RGB
-            self.siril.log('    Converting image to RGB...')
+            self.siril.log(' > Converting image to RGB...')
             rgb_new = lch2rgb(L, C_new, hPlanck).astype(np.float32)
             
             # revert axis correction if applicable
