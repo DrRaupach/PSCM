@@ -19,7 +19,7 @@ from PyQt6.QtCore import Qt
 
 # --- Version information ---
 TITLE = 'Planck Star Color Mapping (PSCM)'
-VERSION = 'V1.2beta'
+VERSION = 'V1.2 beta'
 DEVELOPER = 'Dr. Rainer Raupach'
 
 # --- Default values ---
