@@ -10,6 +10,7 @@ import sirilpy as s
 import numpy as np
 import math
 
+from pathlib import Path
 from collections import namedtuple
 
 s.ensure_installed("PyQt6")
@@ -18,7 +19,7 @@ from PyQt6.QtCore import Qt
 
 # --- Version information ---
 TITLE = 'Planck Star Color Mapping (PSCM)'
-VERSION = 'V1.0beta'
+VERSION = 'V1.2beta'
 DEVELOPER = 'Dr. Rainer Raupach'
 
 # --- Default values ---
@@ -38,30 +39,80 @@ LAMBDA_G = 530.0
 LAMBDA_B = 476.0
 
 # --- UI element styles ---
+SHEET_STYLE = """
+    QWidget {
+        background-color: #2d2d2d;
+        color: #efefef;
+        border: none;
+    }
+    QMainWindow { background-color: #2d2d2d; }
+    QLabel { color: #eeeeee; font-size: 14px; }
+    QPushButton { 
+        background-color: #4a4a4a; 
+        color: #eeeeee; 
+        border: 1px solid #5a5a5a;
+        padding: 8px;
+        border-radius: 4px;
+    }
+    QPushButton:hover { background-color: #5a5a5a; }        
+"""
+
 SLIDER_STYLE = """
-            QSlider::groove:horizontal {
-                border: 1px solid #999999;
-                height: 4px;
-                background: #cccccc;
-                margin: 0px 0;
-                border-radius: 2px;
-            }
-            QSlider::handle:horizontal {
-                background: #0078d7;
-                border: 1px solid #005a9e;
-                width: 15px;
-                height: 15px;
-                margin: -7px 0;
-                border-radius: 7.5px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #005a9e;
-            }
-            QSlider::handle:horizontal:disabled {
-                background: #a0a0a0;
-                border: 1px solid #808080;
-            }
-        """
+    QSlider::groove:horizontal {
+        border: 1px solid #5a5a5a;
+        height: 4px;
+        background: #3d3d3d;
+        margin: 0px 0;
+        border-radius: 2px;
+    }
+    QSlider::groove:horizontal:disabled {
+        border-color: #3d3d3d;
+    }
+    QSlider::handle:horizontal {
+        background: #0078d7;
+        border: 1px solid #005a9e;
+        width: 15px;
+        height: 15px;
+        margin: -7px 0;
+        border-radius: 7.5px;
+    }
+    QSlider::handle:horizontal:hover {
+        background: #005a9e;
+    }
+    QSlider::handle:horizontal:disabled {
+        background: #3d3d3d;
+        border: 1px solid #2d2d2d;
+    }
+    QSlider::sub-page:horizontal {
+        background: #0078d4;
+        border: 1px solid #808080;
+        height: 6px;
+        border-radius: 3px;
+    }    
+    QSlider::sub-page:horizontal:disabled {
+        background: #3d3d3d; 
+        border-color: #3d3d3d;
+    }
+"""
+        
+COMBOBOX_STYLE = """
+    QComboBox {
+        background-color: #3d3d3d;
+        color: #eeeeee;
+        border: 1px solid #5a5a5a;
+        padding: 5px;
+    }
+    QComboBox QAbstractItemView {
+        background-color: #2d2d2d;
+        color: #eeeeee;
+        selection-background-color: #4a4a4a;
+        selection-color: #ffffff;
+        border: 1px solid #5a5a5a;
+    }
+"""
+
+LABEL_WIDTH = 220
+EDITOR_WIDTH = 250
 
 # Image type parameters (combobox name, number of pairs to be used, index matrix for pairs)
 ImageTypePars = namedtuple("ImageTypePars", ["Name", "Wavelength", "NoOfPairs", "Pairs"])
@@ -193,30 +244,39 @@ class PSCM(QWidget):
         self.initUI()
         
     def initUI(self):        
-        self.setWindowTitle(f'{TITLE}')
-        
-        #self.setStyleSheet("""
-        #    QWidget {
-        #        background-color: #2d2d2d;
-        #        color: #efefef;
-        #        border: none;
-        #    }
-        #""")
+        self.setWindowTitle(f'{TITLE}')        
+        self.setStyleSheet(SHEET_STYLE)
         
         layout = QVBoxLayout()
         
         # UI elements
         # Script information
         scriptInfo = QTextBrowser()
-        scriptInfo.setStyleSheet("""
-            QTextBrowser {
-                background-color: #f0f0f0;
-                border: 1px solid #000000;
-            }
+        scriptInfo.setStyleSheet(f"""
+            QTextBrowser {{
+                background-color: transparent;
+                border: 1px solid #5a5a5a;
+                font-size: 14px;
+                color: #eeeeee;
+            }}
         """)
+        
+        script_dir = Path(__file__).parent.absolute()
+        image_location = os.path.join(script_dir, "PlanckColorBar.png").replace("\\", "/")       
+        if Path(image_location).exists():
+            scriptInfo.setStyleSheet(f"""
+                QTextBrowser {{
+                    background-color: transparent;
+                    border: 1px solid #5a5a5a;
+                    font-size: 14px;
+                    color: #000000;
+                    background-image: url("{image_location}");
+                }}
+            """)
+            
         scriptInfo.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scriptInfo.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scriptInfo.setFixedHeight(42)
+        scriptInfo.setFixedHeight(48)
         scriptInfo.setHtml('<p><strong>' + TITLE + ' version ' + VERSION + '</strong><br/>' + 'Copyright &copy; 2026 ' + DEVELOPER + '</p>')
         layout.addWidget(scriptInfo)        
         
@@ -224,8 +284,9 @@ class PSCM(QWidget):
         howtoInfo = QTextBrowser()
         howtoInfo.setStyleSheet("""
             QTextBrowser {
-                background-color: transparent;
-                border: 0px solid #000000;
+                background-color: #1d1d1d;
+                border: 0px solid #efefef;
+                padding: 5px;
             }
         """)
         howtoInfo.setHtml("""
@@ -259,7 +320,7 @@ class PSCM(QWidget):
         """)
         howtoInfo.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         howtoInfo.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        howtoInfo.setFixedHeight(360)
+        howtoInfo.setFixedHeight(365)
         
         layout.addWidget(howtoInfo)        
         
@@ -268,11 +329,12 @@ class PSCM(QWidget):
         
         self.labelImageType = QLabel('Input Image Type')
         #self.labelImageType.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelImageType.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelImageType.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_ImageType.addWidget(self.labelImageType)
         
         self.comboboxImageType = QComboBox()
-        self.comboboxImageType.setFixedWidth(250)
+        self.comboboxImageType.setFixedWidth(EDITOR_WIDTH)
+        self.comboboxImageType.setStyleSheet(COMBOBOX_STYLE)
         for i in range(len(ImageTypePresets)):
             self.comboboxImageType.addItem(ImageTypePresets[i].Name)
         #self.comboboxImageType.currentIndexChanged.connect(self.on_item_clicked) # needed if reaction to item change required
@@ -285,7 +347,7 @@ class PSCM(QWidget):
         
         self.labelSaturation = QLabel(f'Color Saturation Factor: {DEFAULT_COLOR_SATURATION: .2f}')
         #self.labelSaturation.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelSaturation.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelSaturation.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_Saturation.addWidget(self.labelSaturation)
         
         self.sliderSaturation = QSlider(Qt.Orientation.Horizontal)
@@ -302,7 +364,7 @@ class PSCM(QWidget):
         
         self.labelProtect = QLabel(f'Protect Background (X*MAD): {DEFAULT_PROTECT_BACKGROUND: .2f}')
         #self.labelProtect.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelProtect.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelProtect.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_Protect.addWidget(self.labelProtect)
         
         self.sliderProtect = QSlider(Qt.Orientation.Horizontal)
@@ -325,7 +387,9 @@ class PSCM(QWidget):
         
         # Unphysical section
         self.sectionUnphysical = QFrame()
+        self.sectionUnphysical.setObjectName("UnphysicalFrame")
         self.sectionUnphysical.setFrameShape(QFrame.Shape.StyledPanel)
+        self.sectionUnphysical.setStyleSheet("#UnphysicalFrame { border: 1px solid #5a5a5a; }")
         
         layout_Unphysical = QVBoxLayout()  
         
@@ -334,7 +398,7 @@ class PSCM(QWidget):
         
         self.labelSpreading = QLabel(f'Spread Spectral Classes by: {DEFAULT_SPECTRAL_SPREAD: .2f}')
         #self.labelSpreading.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.labelSpreading.setFixedWidth(200) # fixed width, avoids junping in UI
+        self.labelSpreading.setFixedWidth(LABEL_WIDTH) # fixed width, avoids junping in UI
         parameter_Spreading.addWidget(self.labelSpreading)
         
         self.sliderSpreading = QSlider(Qt.Orientation.Horizontal)
@@ -365,7 +429,8 @@ class PSCM(QWidget):
         layout.addLayout(btn_layout)
         
         self.setLayout(layout)
-        self.resize(400, 140)
+        self.show() # Fenster kurz "aktivieren"
+        self.setFixedSize(498, 646)
         
     def update_saturation(self, value):
         c_factor = value / DENOMINATOR_COLOR_SATURATION
