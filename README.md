@@ -1,6 +1,6 @@
 # PSCM
-<svg xmlns="w3.org" width="500" height="300">
-  <image href="[images/screenshot.png](https://github.com/user-attachments/assets/29e557bf-7ae5-4d22-be1b-ac0f50ae73b6)" width="1920" height="48" />
+<svg xmlns="w3.org" width="920" height="48">
+  <image href="[images/screenshot.png](https://github.com/user-attachments/assets/29e557bf-7ae5-4d22-be1b-ac0f50ae73b6)" width="920" height="48" />
   
   <text x="0" y="5" fill="white" font-size="20" font-family="Arial" font-weight="bold">
     Planck Star Color Mapping - SCRIPT for Pleiades Astrophoto PixInsight and Siril
