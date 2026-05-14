@@ -1,5 +1,5 @@
 # PSCM
-Planck Star Color Mapping - SCRIPT for Pleiades Astrophoto PixInsight
+![Banner](banner.svg)
 
 <p><b>Motivation:</b><br>
 Stars in color images composed from narrowband data do not exhibit their true colors as would be expected from visual observation or from an (L)RGB acquisition. Even spectrophotometric calibration procedures such as SPCC do not resolve this issue, since they apply only linear corrections. While the resulting intensities at the respective emission-line wavelengths are physically correct, the stellar colors are not realistic.
@@ -9,10 +9,17 @@ Unless RGB data have already been acquired — for example, to represent reflect
 Stars are, to first approximation, ideal blackbody radiators. According to Planck’s radiation law (PRL), they emit a characteristic spectrum determined by their surface temperature. Under this assumption, the color of a star is uniquely defined by its temperature. If the temperature can be estimated from arbitrary spectral measurements, the corresponding color can be computed from Planck’s law.
 Due to the mathematical properties of the Planck distribution, it is sufficient to know the (calibrated) intensity ratio at two different wavelengths. The approach therefore consists of first determining the stellar temperature from intensities measured in narrowband data and then, in reverse, synthesizing the color that the corresponding blackbody spectrum would exhibit in an RGB image.
 </p>
+
 <p><b>PixInsight Integration:</b><br>
 <ul>
 <li>To use PSCM in PixInsight add the following repository link in RESOURCES -> Updates -> Manage Repositories: https://drraupach.github.io/PSCM/</li>
 <li>Requires minimum PixInsight version 1.9.3 with update-rsc.auth equal to or newer than Feb 13th 2026.</li>
+</ul>
+</p><br>
+
+<p><b>Siril Integration:</b><br>
+<ul>
+<li>The script, including all files from the source location, still needs to be downloaded from [Github](https://github.com/DrRaupach/PSCM/tree/main/siril) and manually copied to the Siril script folder or any custom folder added to the Scripts Storage Directories list under Preferences → Scripts.</li>
 </ul>
 </p><br>
 
