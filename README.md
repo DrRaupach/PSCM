@@ -1,5 +1,11 @@
 # PSCM
-![Planck Star Color Mapping - SCRIPT for Pleiades Astrophoto PixInsight and Siril](https://github.com/user-attachments/assets/29e557bf-7ae5-4d22-be1b-ac0f50ae73b6)
+<svg xmlns="w3.org" width="500" height="300">
+  <image href="[images/screenshot.png](https://github.com/user-attachments/assets/29e557bf-7ae5-4d22-be1b-ac0f50ae73b6)" width="1920" height="48" />
+  
+  <text x="0" y="5" fill="white" font-size="20" font-family="Arial" font-weight="bold">
+    Planck Star Color Mapping - SCRIPT for Pleiades Astrophoto PixInsight and Siril
+  </text>
+</svg>
 
 <p><b>Motivation:</b><br>
 Stars in color images composed from narrowband data do not exhibit their true colors as would be expected from visual observation or from an (L)RGB acquisition. Even spectrophotometric calibration procedures such as SPCC do not resolve this issue, since they apply only linear corrections. While the resulting intensities at the respective emission-line wavelengths are physically correct, the stellar colors are not realistic.
