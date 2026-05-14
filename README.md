@@ -1,7 +1,7 @@
 # PSCM
 <div>
   <h3>Planck Star Color Mapping - SCRIPT for Pleiades Astrophoto PixInsight and Siril</h3>
-  <img src="siril/PlanckColorBar.png" width="1080" hight="48" alt="Planck Color Bar">
+  <img src="siril/PlanckColorBar.png" width="1080" height="48" alt="Planck Color Bar">
 </div><br>
 <p><b>Motivation:</b><br>
 Stars in color images composed from narrowband data do not exhibit their true colors as would be expected from visual observation or from an (L)RGB acquisition. Even spectrophotometric calibration procedures such as SPCC do not resolve this issue, since they apply only linear corrections. While the resulting intensities at the respective emission-line wavelengths are physically correct, the stellar colors are not realistic.
