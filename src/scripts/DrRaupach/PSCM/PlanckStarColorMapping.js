@@ -1,3 +1,6 @@
+#engine v8
+CoreApplication.ensureMinimumVersion( 1, 9, 4 );
+
 #feature-id    PlanckStarColorMapping : Utilities > PlanckStarColorMapping
 
 #feature-info \
@@ -5,7 +8,7 @@ Maps HOO/HSO/SHO/... stars to naturally colored stars using Planck's law of blac
 Copyright (C) 2026 Dr. Rainer Raupach<br/>
 
 #define TITLE "Planck Star Color Mapping (PSCM)"
-#define VERSION "V1.2.0"
+#define VERSION "V1.3.0"
 #define DEVELOPER "Dr. Rainer Raupach"
 
 #define DEFAULT_COLOR_SATURATION (1.0)
@@ -18,11 +21,6 @@ Copyright (C) 2026 Dr. Rainer Raupach<br/>
 #define LAMBDA_R (622.0)
 #define LAMBDA_G (530.0)
 #define LAMBDA_B (476.0)
-
-#include <pjsr/UndoFlag.jsh>
-#include <pjsr/SectionBar.jsh>
-#include <pjsr/NumericControl.jsh>
-#include <pjsr/DataType.jsh>
 
 var myConfig = {};
 
@@ -44,162 +42,162 @@ var KEY_SPREADING_VALUE = SETTINGS_KEY_BASE + "spreadingValue";
 
 
 // -----------------------------------------------------------------------------
-function ScaleImageDialog() {
+class ScaleImageDialog extends Dialog {
+    constructor() {
+        super();
 
-    this.__base__ = Dialog;
-    this.__base__();
+        // Title
+        this.windowTitle = "Planck Star Color Mapping (PSCM)";
 
-    // Title
-    this.windowTitle = "Planck Star Color Mapping (PSCM)";
+        this.helpLabel = new Label(this);
+        this.helpLabel.styleSheet = this.scaledStyleSheet(
+                                       "QWidget#" + this.helpLabel.uniqueId + " {"
+                                       + "border: 1px solid gray;"
+                                       + "padding: 0.25em;"
+                                       + "}");
+        this.helpLabel.wordWrapping = true;
+        this.helpLabel.useRichText = true;
+        this.helpLabel.text = "<p><strong>" + TITLE + " version " + VERSION + "</strong><br/>"
+                              + "Copyright &copy; 2026 " + DEVELOPER + "</p>";
 
-    this.helpLabel = new Label(this);
-    this.helpLabel.styleSheet = this.scaledStyleSheet(
-                                   "QWidget#" + this.helpLabel.uniqueId + " {"
-                                   + "border: 1px solid gray;"
-                                   + "padding: 0.25em;"
-                                   + "}");
-    this.helpLabel.wordWrapping = true;
-    this.helpLabel.useRichText = true;
-    this.helpLabel.text = "<p><strong>" + TITLE + " version " + VERSION + "</strong><br/>"
-                          + "Copyright &copy; 2026 " + DEVELOPER + "</p>";
+        this.info = new Label(this);
+        this.info.margin = 0;
+        this.info.text = "How to use PSCM?\n" + "(example/typical workflow for HOO)\n\n"
+                            + "1.  Load matching LINEAR Ha and OIII images after DBE/Graxpert.\n\n"
+                            + "2.  Combine to HOO color image using ChannelCombination.\n\n"
+                            + "3.  Apply ImageSolver to find astrometric solution on HOO image.\n\n"
+                            + "4.  Apply SPCC with 'Red filter' at 656.3, 'Green/Blue filter' at 500.7 in \n"
+                            + "     'Narrowband mode' and 'Optimize for Stars' checked. The white reference \n"
+                            + "     should not be ''too hot''. 'Average Galaxy' (~4500K) is a good choice.\n\n"
+                            + "5.  Derive the Starless image (e.g. by SXT), also the Stars in unscreen mode.\n"
+                            + "     [Stars can also be calculated manually using PixelMath by ~(~HOO / ~Starless)]\n\n"
+                            + "6.  Apply PSCM to the Star image which transforms the HOO colors\n"
+                            + "     to black body colors according to the stars' temperatures.\n\n"
+                            + "7.  Combine the PSCM mapped Stars with the Starless by screening,\n"
+                            + "     e.g. using PixelMath by ~(~Starless * ~Stars)\n\n"
+                            + "Voilà! You now have a bi-color HOO image with (almost) naturally colored stars\n"
+                            + "without the need of an additional RGB image, still in lineal domain.\n"
+                            + "Continue with stretching and further post-processing as usual.\n\n"
+                            + "In general: the wavelengths in SPCC for S|H|O should be 672.4|656.3|500.7\n"
+                            + "assigned to the respective filter slot. For RGB, the standard filters can be used.\n";
 
-    this.info = new Label(this);
-    this.info.margin = 0;
-    this.info.text = "How to use PSCM?\n" + "(example/typical workflow for HOO)\n\n"
-                        + "1.  Load matching LINEAR Ha and OIII images after DBE/Graxpert.\n\n"
-                        + "2.  Combine to HOO color image using ChannelCombination.\n\n"
-                        + "3.  Apply ImageSolver to find astrometric solution on HOO image.\n\n"
-                        + "4.  Apply SPCC with 'Red filter' at 656.3, 'Green/Blue filter' at 500.7 in \n"
-                        + "     'Narrowband mode' and 'Optimize for Stars' checked. The white reference \n"
-                        + "     should not be ''too hot''. 'Average Galaxy' (~4500K) is a good choice.\n\n"
-                        + "5.  Derive the Starless image (e.g. by SXT), also the Stars in unscreen mode.\n"
-                        + "     [Stars can also be calculated manually using PixelMath by ~(~HOO / ~Starless)]\n\n"
-                        + "6.  Apply PSCM to the Star image which transforms the HOO colors\n"
-                        + "     to black body colors according to the stars' temperatures.\n\n"
-                        + "7.  Combine the PSCM mapped Stars with the Starless by screening,\n"
-                        + "     e.g. using PixelMath by ~(~Starless * ~Stars)\n\n"
-                        + "Voilà! You now have a bi-color HOO image with (almost) naturally colored stars\n"
-                        + "without the need of an additional RGB image, still in linear domain.\n"
-                        + "Continue with stretching and further post-processing as usual.\n\n"
-                        + "In general: the wavelengths in SPCC for S|H|O should be 672.4|656.3|500.7\n"
-                        + "assigned to the respective filter slot. For RGB, the standard filters can be used.\n";
+        // Detect version update since last excution and store current version
+        let lastVersion = Settings.read(KEY_VERSION, DataType.String);
+        let isUpgradeFromV116 = (null != lastVersion) && (lastVersion == "V1.1.6") && isVersionGreater(VERSION, lastVersion);
 
-    // Detect version update since last excution and store current version
-    let lastVersion = Settings.read(KEY_VERSION, DataType_String);
-    let isUpgradeFromV116 = (null != lastVersion) && (lastVersion == "V1.1.6") && isVersionGreater(VERSION, lastVersion);
+        // Input image type
+        this.imageTypeLabel = new Label(this);
+        this.imageTypeLabel.text = "Input Image Type:";
+        this.imageTypeLabel.textAlignment = TextAlignment.Right | TextAlignment.VertCenter;
+        this.imageTypeLabel.minWidth = 200;
 
-    // Input image type
-    this.imageTypeLabel = new Label(this);
-    this.imageTypeLabel.text = "Input Image Type:";
-    this.imageTypeLabel.textAlignment = TextAlign_Right | TextAlign_VertCenter;
-    this.imageTypeLabel.minWidth = 200;
+        this.imageType = new ComboBox(this);
+        for (var n = 0; n < myConfig.imageTypeOptions.length; n++) {
+          this.imageType.addItem(myConfig.imageTypeOptions[n]);
+        }
+        let lastItem = Settings.read(KEY_IMAGETYPE, DataType.Int32);
+        if (null == lastItem) lastItem = 0;
+        this.imageType.currentItem = lastItem;
 
-    this.imageType = new ComboBox(this);
-    for (var n = 0; n < myConfig.imageTypeOptions.length; n++) {
-      this.imageType.addItem(myConfig.imageTypeOptions[n]);
+        this.imageTypeSizer = new HorizontalSizer;
+        this.imageTypeSizer.spacing = 4;
+        this.imageTypeSizer.add(this.imageTypeLabel);
+        this.imageTypeSizer.add(this.imageType, 100);
+
+        // Saturation factor
+        this.colorSaturationEdit = new NumericControl(this);
+        this.colorSaturationEdit.label.text = "Color Saturation Factor:";
+        this.colorSaturationEdit.toolTip = "Color Saturation Factor. Increased saturation may increase color errors of the input image.";
+        this.colorSaturationEdit.label.minWidth = 200;
+        this.colorSaturationEdit.setRange(0.00, 2.00);
+        this.colorSaturationEdit.setPrecision(2);
+        this.colorSaturationEdit.slider.setRange(0, 200);
+        this.colorSaturationEdit.slider.stepSize = 1;
+        this.colorSaturationEdit.slider.pageSize = 10;
+        let saturationValue = Settings.read(KEY_SATURATION_VALUE, DataType.Double);
+        if (null == saturationValue) saturationValue = DEFAULT_COLOR_SATURATION;
+        this.colorSaturationEdit.setValue(saturationValue); // must be set at the end!
+
+        // Protect background
+        this.protectBackgroundEdit = new NumericControl(this);
+        this.protectBackgroundEdit.label.text = "Protect Background (X*MAD):";
+        this.protectBackgroundEdit.toolTip = "Multiple of background noise (MAD).";
+        this.protectBackgroundEdit.label.minWidth = 200;
+        this.protectBackgroundEdit.setRange(0.5, 12.0);
+        this.protectBackgroundEdit.setPrecision(1);
+        this.protectBackgroundEdit.slider.setRange(0, 100);
+        this.protectBackgroundEdit.slider.stepSize = 1;
+        this.protectBackgroundEdit.slider.pageSize = 10;
+        let protectBgrValue = Settings.read(KEY_PROTECTBGR_VALUE, DataType.Double);
+        if (null == protectBgrValue) {
+           protectBgrValue = DEFAULT_PROTECT_BACKGROUND;
+        }
+        else {
+           if (isUpgradeFromV116) protectBgrValue = protectBgrValue / 4;
+        }
+        this.protectBackgroundEdit.setValue(protectBgrValue); // must be set at the end!
+
+        // Spectral spreading
+        this.spreadSpectralClass = new NumericControl(this);
+        this.spreadSpectralClass.label.text = "Spread Spectral Classes by:";
+        this.spreadSpectralClass.toolTip = "Artifically spreads the color temperature with respect to the white reference, i.e. makes stars hotter than the white reference even hotter and vice versa.";
+        this.spreadSpectralClass.label.minWidth = 200;
+        this.spreadSpectralClass.setRange(1.00, 2.00);
+        this.spreadSpectralClass.setPrecision(2);
+        this.spreadSpectralClass.slider.setRange(0, 100);
+        this.spreadSpectralClass.slider.stepSize = 1;
+        this.spreadSpectralClass.slider.pageSize = 10;
+        let spreadingValue = Settings.read(KEY_SPREADING_VALUE, DataType.Double);
+        if (null == spreadingValue) spreadingValue = DEFAULT_SPECTRAL_SPREAD;
+        this.spreadSpectralClass.setValue(spreadingValue); // must be set at the end!
+
+        this.unphysicalContent = new Control(this);
+        //this.unphysicalContent.hide();
+
+        this.unphysicalContent.sizer = new VerticalSizer;
+        this.unphysicalContent.sizer.add(this.spreadSpectralClass);
+
+        this.unphysicalBar = new SectionBar(this, "Unphysical");
+        this.unphysicalBar.enableCheckBox();
+        let unphysicalState = Settings.read(KEY_UNPHYSICAL_VALUE, DataType.Boolean);
+        if (null == unphysicalState) unphysicalState = false;
+        this.unphysicalBar.checkBox.checked = unphysicalState;
+        this.unphysicalBar.setSection(this.unphysicalContent);
+
+        // OK / Cancel Buttons
+        this.ok_Button = new PushButton(this);
+        this.ok_Button.text = "OK";
+        this.ok_Button.onClick = () => {
+            this.ok();
+        };
+
+        this.cancel_Button = new PushButton(this);
+        this.cancel_Button.text = "Cancel";
+        this.cancel_Button.onClick = () => {
+            this.cancel();
+        };
+
+        // Layout
+        this.buttonSizer = new HorizontalSizer;
+        this.buttonSizer.spacing = 10;
+        this.buttonSizer.addStretch();
+        this.buttonSizer.add(this.ok_Button);
+        this.buttonSizer.add(this.cancel_Button);
+
+        this.sizer = new VerticalSizer;
+        this.sizer.margin = 10;
+        this.sizer.spacing = 10;
+        this.sizer.add(this.helpLabel);
+        this.sizer.add(this.info);
+        this.sizer.add(this.imageTypeSizer);
+        this.sizer.add(this.colorSaturationEdit);
+        this.sizer.add(this.protectBackgroundEdit);
+        this.sizer.add(this.unphysicalBar);
+        this.sizer.add(this.unphysicalContent);
+        this.sizer.add(this.buttonSizer);
+
+        this.adjustToContents();
     }
-    let lastItem = Settings.read(KEY_IMAGETYPE, DataType_Int32);
-    if (null == lastItem) lastItem = 0;
-    this.imageType.currentItem = lastItem;
-
-    this.imageTypeSizer = new HorizontalSizer;
-    this.imageTypeSizer.spacing = 4;
-    this.imageTypeSizer.add(this.imageTypeLabel);
-    this.imageTypeSizer.add(this.imageType, 100);
-
-    // Saturation factor
-    this.colorSaturationEdit = new NumericControl(this);
-    this.colorSaturationEdit.label.text = "Color Saturation Factor:";
-    this.colorSaturationEdit.toolTip = "Color Saturation Factor. Increased saturation may increase color errors of the input image.";
-    this.colorSaturationEdit.label.minWidth = 200;
-    this.colorSaturationEdit.setRange(0.00, 2.00);
-    this.colorSaturationEdit.setPrecision(2);
-    this.colorSaturationEdit.slider.setRange(0, 200);
-    this.colorSaturationEdit.slider.stepSize = 1;
-    this.colorSaturationEdit.slider.pageSize = 10;
-    let saturationValue = Settings.read(KEY_SATURATION_VALUE, DataType_Double);
-    if (null == saturationValue) saturationValue = DEFAULT_COLOR_SATURATION;
-    this.colorSaturationEdit.setValue(saturationValue); // must be set at the end!
-
-    // Protect background
-    this.protectBackgroundEdit = new NumericControl(this);
-    this.protectBackgroundEdit.label.text = "Protect Background (X*MAD):";
-    this.protectBackgroundEdit.toolTip = "Multiple of background noise (MAD).";
-    this.protectBackgroundEdit.label.minWidth = 200;
-    this.protectBackgroundEdit.setRange(0.5, 12.0);
-    this.protectBackgroundEdit.setPrecision(1);
-    this.protectBackgroundEdit.slider.setRange(0, 100);
-    this.protectBackgroundEdit.slider.stepSize = 1;
-    this.protectBackgroundEdit.slider.pageSize = 10;
-    let protectBgrValue = Settings.read(KEY_PROTECTBGR_VALUE, DataType_Double);
-    if (null == protectBgrValue) {
-       protectBgrValue = DEFAULT_PROTECT_BACKGROUND;
-    }
-    else {
-       if (isUpgradeFromV116) protectBgrValue = protectBgrValue / 4;
-    }
-    this.protectBackgroundEdit.setValue(protectBgrValue); // must be set at the end!
-
-    // Spectral spreading
-    this.spreadSpectralClass = new NumericControl(this);
-    this.spreadSpectralClass.label.text = "Spread Spectral Classes by:";
-    this.spreadSpectralClass.toolTip = "Artifically spreads the color temperature with respect to the white reference, i.e. makes stars hotter than the white reference even hotter and vice versa.";
-    this.spreadSpectralClass.label.minWidth = 200;
-    this.spreadSpectralClass.setRange(1.00, 2.00);
-    this.spreadSpectralClass.setPrecision(2);
-    this.spreadSpectralClass.slider.setRange(0, 100);
-    this.spreadSpectralClass.slider.stepSize = 1;
-    this.spreadSpectralClass.slider.pageSize = 10;
-    let spreadingValue = Settings.read(KEY_SPREADING_VALUE, DataType_Double);
-    if (null == spreadingValue) spreadingValue = DEFAULT_SPECTRAL_SPREAD;
-    this.spreadSpectralClass.setValue(spreadingValue); // must be set at the end!
-
-    this.unphysicalContent = new Control(this);
-    //this.unphysicalContent.hide();
-
-    this.unphysicalContent.sizer = new VerticalSizer;
-    this.unphysicalContent.sizer.add(this.spreadSpectralClass);
-
-    this.unphysicalBar = new SectionBar(this, "Unphysical");
-    this.unphysicalBar.enableCheckBox();
-    let unphysicalState = Settings.read(KEY_UNPHYSICAL_VALUE, DataType_Boolean);
-    if (null == unphysicalState) unphysicalState = false;
-    this.unphysicalBar.checkBox.checked = unphysicalState;
-    this.unphysicalBar.setSection(this.unphysicalContent);
-
-    // OK / Cancel Buttons
-    this.ok_Button = new PushButton(this);
-    this.ok_Button.text = "OK";
-    this.ok_Button.onClick = () => {
-        this.ok();
-    };
-
-    this.cancel_Button = new PushButton(this);
-    this.cancel_Button.text = "Cancel";
-    this.cancel_Button.onClick = () => {
-        this.cancel();
-    };
-
-    // Layout
-    this.buttonSizer = new HorizontalSizer;
-    this.buttonSizer.spacing = 10;
-    this.buttonSizer.addStretch();
-    this.buttonSizer.add(this.ok_Button);
-    this.buttonSizer.add(this.cancel_Button);
-
-    this.sizer = new VerticalSizer;
-    this.sizer.margin = 10;
-    this.sizer.spacing = 10;
-    this.sizer.add(this.helpLabel);
-    this.sizer.add(this.info);
-    this.sizer.add(this.imageTypeSizer);
-    this.sizer.add(this.colorSaturationEdit);
-    this.sizer.add(this.protectBackgroundEdit);
-    this.sizer.add(this.unphysicalBar);
-    this.sizer.add(this.unphysicalContent);
-    this.sizer.add(this.buttonSizer);
-
-    this.adjustToContents();
 }
 
 // -----------------------------------------------------------------------------
@@ -441,7 +439,7 @@ function process(dialog) {
     }
 
     var view = window.currentView;
-    view.beginProcess(UndoFlag_PixelData);
+    view.beginProcess(UndoFlag.PixelData);
 
     // get image data
     var img = view.image;
@@ -622,18 +620,13 @@ function process(dialog) {
 // -----------------------------------------------------------------------------
 // Store UI parameters
 function storeUI(dialog) {
-    Settings.write(KEY_VERSION, DataType_String, VERSION);
-    Settings.write(KEY_IMAGETYPE, DataType_Int32, dialog.imageType.currentItem);
-    Settings.write(KEY_SATURATION_VALUE, DataType_Double, dialog.colorSaturationEdit.value);
-    Settings.write(KEY_PROTECTBGR_VALUE, DataType_Double, dialog.protectBackgroundEdit.value);
-    Settings.write(KEY_UNPHYSICAL_VALUE, DataType_Boolean, dialog.unphysicalBar.checkBox.checked);
-    Settings.write(KEY_SPREADING_VALUE, DataType_Double, dialog.spreadSpectralClass.value);
+    Settings.write(KEY_VERSION, DataType.String, VERSION);
+    Settings.write(KEY_IMAGETYPE, DataType.Int32, dialog.imageType.currentItem);
+    Settings.write(KEY_SATURATION_VALUE, DataType.Double, dialog.colorSaturationEdit.value);
+    Settings.write(KEY_PROTECTBGR_VALUE, DataType.Double, dialog.protectBackgroundEdit.value);
+    Settings.write(KEY_UNPHYSICAL_VALUE, DataType.Boolean, dialog.unphysicalBar.checkBox.checked);
+    Settings.write(KEY_SPREADING_VALUE, DataType.Double, dialog.spreadSpectralClass.value);
 };
-
-// =============================================================================
-// inherit from Dialog
-ScaleImageDialog.prototype = new Dialog;
-
 
 // main function
 function main() {
