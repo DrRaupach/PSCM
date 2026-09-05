@@ -9,6 +9,8 @@ import os
 import sirilpy as s
 import numpy as np
 import math
+import platform
+import ctypes
 
 from pathlib import Path
 from collections import namedtuple
@@ -243,9 +245,32 @@ class PSCM(QWidget):
         
         self.initUI()
         
+    def set_dark_mode(self):        
+        window_handle = int(self.winId())
+        
+        # Only exceute if running on Windows
+        if platform.system() == "Windows":
+            try:
+                # DWMWA_USE_IMMERSIVE_DARK_MODE Attribute-ID
+                # Windows 11 nutzt 20, Windows 10 (Build 18985+) uses 20 or 19
+                DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+                set_to_true = ctypes.c_int(1)
+    
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                    window_handle, 
+                    DWMWA_USE_IMMERSIVE_DARK_MODE, 
+                    ctypes.byref(set_to_true), 
+                    ctypes.sizeof(set_to_true)
+                )
+            except Exception as e:
+                self.siril.log("Dark mode could not be set.", s.LogColor.SALMON)
+        else:
+            self.siril.log("Not Windows – dark mode header is managed by OS.", s.LogColor.SALMON)
+
     def initUI(self):        
         self.setWindowTitle(f'{TITLE}')        
         self.setStyleSheet(SHEET_STYLE)
+        self.set_dark_mode()
         
         layout = QVBoxLayout()
         
