@@ -24,8 +24,8 @@
             </description>
          </package>
       </platform>
-      <platform os="all" arch="noarch" version="1.9.4:1.9.9">
-         <package fileName="PSCM_v8engine.zip" sha1="caa64b38523210d30d9e4c369c40810d12961724" type="script" releaseDate="20260905120000">
+      <platform os="all" arch="noarch" version="1.9.4:">
+         <package fileName="PSCM_v8engine.zip" sha1="caa64b38523210d30d9e4c369c40810d12961724" type="script" releaseDate="20260906120000">
             <title>
                Planck Star Color Mapping (PSCM) - v1.3
             </title>
@@ -44,4 +44,4 @@
       </platform>
    </repository>
 </xri>
-<Signature developerId="DrRaupach" timestamp="2026-09-06T09:03:05.219Z" encoding="Base64">eZ/425yeFZz7d+IKptaEI2D+zhCCEthBF8hsvkSRHautwvRJUOI31/ljM4q9pui7zeigHdGRgk9Mx3MM8YMUCQ==</Signature>
+<Signature developerId="DrRaupach" timestamp="2026-09-06T09:09:01.601Z" encoding="Base64">+DvolgjJLZRh/ggXjuP1UBi7SBWGCSTJjS9iC7G2jarEFIglcd18HR5BECVNh7bNHir1Vg9gO7oyPAvJ1CknBw==</Signature>
