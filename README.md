@@ -16,6 +16,7 @@ Due to the mathematical properties of the Planck distribution, it is sufficient 
 <ul>
 <li>To use PSCM in PixInsight add the following repository link in RESOURCES -> Updates -> Manage Repositories: https://drraupach.github.io/PSCM/</li>
 <li>Requires minimum PixInsight version 1.9.3 with update-rsc.auth equal to or newer than Feb 13th 2026.</li>
+<li>Dedicated version for PixInsight version 1.9.4 with javascript v8 engine support.</li>
 </ul>
 </p><br>
 
