@@ -9,7 +9,7 @@ PCLSRCDIR ?= $(PCLDIR)/src
 PCLINCDIR ?= $(PCLDIR)/include
 PCLLIBDIR64 ?= $(PCLDIR)/lib/macos/x64
 PSCM_MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-PCLBINDIR64 ?= $(PSCM_MAKEFILE_DIR)../../bin
+PCLBINDIR64 ?= $(PSCM_MAKEFILE_DIR)../bin
 SDKROOT ?= $(shell xcrun --sdk macosx --show-sdk-path)
 
 OBJ_DIR := $(PROJECT_DIR)/build/1.8.9-3/macos/g++/x64/Release

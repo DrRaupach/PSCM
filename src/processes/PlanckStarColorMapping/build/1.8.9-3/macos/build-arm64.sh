@@ -3,14 +3,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BUILD_VERSION_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PCLDIR="${PCLDIR:-/Users/$USER/PCL}"
 
 export PCLDIR
 export PCLSRCDIR="$PCLDIR/src"
 export PCLINCDIR="$PCLDIR/include"
 export PCLLIBDIR64="$PCLDIR/lib/macos/arm64"
-export PCLBINDIR64="$BUILD_VERSION_DIR/bin"
+export PCLBINDIR64="$SCRIPT_DIR/bin"
 
 if [[ "$(uname -m)" != "arm64" ]]; then
   echo "This PCL 2.7.0 arm64 build must run on an Apple Silicon macOS host." >&2

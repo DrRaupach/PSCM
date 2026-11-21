@@ -3,14 +3,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BUILD_VERSION_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 PCLDIR="${PCLDIR:-/Users/$USER/PCL}"
 
 export PCLDIR
 export PCLSRCDIR="$PCLDIR/src"
 export PCLINCDIR="$PCLDIR/include"
 export PCLLIBDIR64="$PCLDIR/lib/macos/x64"
-export PCLBINDIR64="$BUILD_VERSION_DIR/bin"
+export PCLBINDIR64="$SCRIPT_DIR/bin"
 
 if [[ "$(uname -m)" != "x86_64" ]]; then
   echo "PCL 2.7.0 macOS makefiles in this snapshot target x86_64." >&2

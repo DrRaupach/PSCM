@@ -52,7 +52,7 @@ jobs:
           export PCLSRCDIR="$PCLDIR/src"
           export PCLINCDIR="$PCLDIR/include"
           export PCLLIBDIR64="$PCLDIR/lib/macos/$pcl_arch"
-          export PCLBINDIR64="$GITHUB_WORKSPACE/src/processes/PlanckStarColorMapping/build/1.9.6/bin"
+          export PCLBINDIR64="$GITHUB_WORKSPACE/src/processes/PlanckStarColorMapping/build/1.9.6/macos/bin"
           export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
           xcode_developer_dir="$(xcode-select -p)"
           xcode_app="${xcode_developer_dir%/Contents/Developer}"
@@ -135,6 +135,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PlanckStarColorMapping-pxm-macos-${{ runner.arch }}
-          path: src/processes/PlanckStarColorMapping/build/1.9.6/bin/PlanckStarColorMapping-pxm.dylib
+          path: src/processes/PlanckStarColorMapping/build/1.9.6/macos/bin/PlanckStarColorMapping-pxm.dylib
           if-no-files-found: error
           retention-days: 14

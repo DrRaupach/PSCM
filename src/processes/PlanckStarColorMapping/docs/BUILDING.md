@@ -82,7 +82,7 @@ installed or smoke-tested in PixInsight 1.8.9-3.
   by PixInsight. This target does not compile the workstation-specific raster
   file paths.
 - Output:
-  `../build/1.8.9-3/bin/PlanckStarColorMapping-pxm.dll`
+  `../build/1.8.9-3/windows/bin/PlanckStarColorMapping-pxm.dll`
   (2,768,384 bytes; SHA-256
   `B6015FA734B5463F6A95A5B49345D919D1651618854453059FCEC4FBA5B230D7`).
   `dumpbin /headers` confirms an x64 PE32+ DLL. The build completed with zero
@@ -133,7 +133,7 @@ generate the PCL project; its external-module UI was not used for PSCM.
   [`PCL.vcxproj`](../build/1.9.6/windows/vc17/PCL.vcxproj) and
   [`PlanckStarColorMapping.vcxproj`](../build/1.9.6/windows/vc17/PlanckStarColorMapping.vcxproj).
 - Output:
-  `../build/1.9.6/bin/PlanckStarColorMapping-pxm.dll`
+  `../build/1.9.6/windows/bin/PlanckStarColorMapping-pxm.dll`
   (2,857,472 bytes; SHA-256
   `A1D81BE6229DAB09D28C56A4250B9C09878F6A98AE5F598C409FA0A907FA0D44`).
   `dumpbin /headers` confirms an x64 PE32+ DLL. The clean PSCM build completed
@@ -174,7 +174,7 @@ PixInsight 1.9.6 module against the pinned PCL 2.15.0 snapshot. It downloads
 and verifies that snapshot, then uses the matching x64 or arm64 PCL makefiles
 for the architecture reported by `macos-latest`. The resulting
 `PlanckStarColorMapping-pxm.dylib` is written to
-`build/1.9.6/bin/` and uploaded as a workflow artifact. The module is not
+`build/1.9.6/macos/bin/` and uploaded as a workflow artifact. The module is not
 signed with PixInsight's distribution certificate; a successful CI build
 does not establish that it loads in PixInsight.
 
@@ -197,7 +197,7 @@ PCLDIR=/path/to/PCL-2.7.0 ./build.sh
 
 The script builds PCL's macOS static dependencies and PCL itself before
 building `PlanckStarColorMapping-pxm.dylib`. The generated output is placed in
-`build/1.8.9-3/bin/PlanckStarColorMapping-pxm.dylib`. Install it by copying the
+`build/1.8.9-3/macos/bin/PlanckStarColorMapping-pxm.dylib`. Install it by copying the
 signed module into the PixInsight
 `/Applications/PixInsight/bin` module directory and installing the SVG or PNG
 icon in `rsc/icons/module/PlanckStarColorMapping/`, then restart PixInsight.
