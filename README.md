@@ -17,6 +17,7 @@ Due to the mathematical properties of the Planck distribution, it is sufficient 
 <li>To use PSCM in PixInsight add the following repository link in RESOURCES -> Updates -> Manage Repositories: https://drraupach.github.io/PSCM/</li>
 <li>Requires minimum PixInsight version 1.9.3 with update-rsc.auth equal to or newer than Feb 13th 2026.</li>
 <li>Dedicated version for PixInsight version 1.9.4 with javascript v8 engine support.</li>
+<li>A native C++ process port is being prepared in the <a href="src/processes/PlanckStarColorMapping/README.md">process project</a>; it requires the matching PixInsight PCL SDK and is not yet a built module.</li>
 </ul>
 </p><br>
 

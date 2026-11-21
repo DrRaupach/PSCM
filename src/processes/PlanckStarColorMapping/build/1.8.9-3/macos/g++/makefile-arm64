@@ -1,0 +1,56 @@
+######################################################################
+# Planck Star Color Mapping - macOS arm64 external module
+# PCL 2.7.0 / PixInsight 1.8.9-3
+######################################################################
+
+PROJECT_DIR ?= $(abspath ../../../..)
+PCLDIR ?= $(HOME)/PCL
+PCLSRCDIR ?= $(PCLDIR)/src
+PCLINCDIR ?= $(PCLDIR)/include
+PCLLIBDIR64 ?= $(PCLDIR)/lib/macos/arm64
+PSCM_MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+PCLBINDIR64 ?= $(PSCM_MAKEFILE_DIR)../../bin
+SDKROOT ?= $(shell xcrun --sdk macosx --show-sdk-path)
+
+OBJ_DIR := $(PROJECT_DIR)/build/1.8.9-3/macos/g++/arm64/Release
+
+.PHONY: all clean
+
+all: $(PCLBINDIR64)/PlanckStarColorMapping-pxm.dylib
+
+OBJ_FILES := \
+	$(OBJ_DIR)/PSCMModule.o \
+	$(OBJ_DIR)/PSCMProcess.o \
+	$(OBJ_DIR)/PSCMInstance.o \
+	$(OBJ_DIR)/PSCMInterface.o
+
+DEP_FILES := $(OBJ_FILES:.o=.d)
+
+-include $(DEP_FILES)
+
+$(PCLBINDIR64)/PlanckStarColorMapping-pxm.dylib: $(OBJ_FILES)
+	@mkdir -p $(PCLBINDIR64)
+	clang++ -arch arm64 -fPIC -headerpad_max_install_names \
+		-Wl,-syslibroot,$(SDKROOT) -mmacosx-version-min=12 -stdlib=libc++ \
+		-Wl,-dead_strip -rdynamic -dynamiclib \
+		-install_name @executable_path/PlanckStarColorMapping-pxm.dylib \
+		-L"$(PCLLIBDIR64)" -o $@ $(OBJ_FILES) \
+		-framework AppKit -lpthread \
+		-lPCL-pxi -llz4-pxi -lzstd-pxi -lzlib-pxi \
+		-lRFC6234-pxi -llcms-pxi -lcminpack-pxi
+
+$(OBJ_DIR)/%.o: $(PROJECT_DIR)/%.cpp
+	@mkdir -p $(OBJ_DIR)
+	clang++ -c -pipe -pthread -arch arm64 -fPIC \
+		-isysroot $(SDKROOT) -mmacosx-version-min=12 \
+		-D_REENTRANT -D__PCL_MACOSX \
+		-I"$(PCLINCDIR)" -I"$(PCLSRCDIR)/3rdparty" \
+		-O3 -ffunction-sections -fdata-sections -ffast-math \
+		-fvisibility=hidden -fvisibility-inlines-hidden \
+		-std=c++17 -stdlib=libc++ -Wall -Wno-parentheses \
+		-Wno-extern-c-compat -MMD -MP -MF"$(@:.o=.d)" -o"$@" "$<"
+
+clean:
+	rm -rf $(OBJ_DIR)
+	rm -f $(PCLBINDIR64)/PlanckStarColorMapping-pxm.dylib
+

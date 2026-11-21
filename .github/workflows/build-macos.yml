@@ -1,0 +1,140 @@
+name: Build PixInsight 1.9.6 macOS module
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/build-macos.yml"
+      - "src/processes/PlanckStarColorMapping/**"
+  pull_request:
+    paths:
+      - ".github/workflows/build-macos.yml"
+      - "src/processes/PlanckStarColorMapping/**"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build 1.9.6 macOS module
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out PSCM
+        uses: actions/checkout@v4
+
+      - name: Build against PCL 2.15.0
+        shell: bash
+        env:
+          PCL_COMMIT: 7122c29e04ec6acf3825054f415b59ce5c83c9dc
+          PCL_ARCHIVE_SHA256: 3F1D44DBABCF2D2044DFE693757CD3DECD7AC911A4593D1B531A0B3A11B5F7D3
+        run: |
+          set -euo pipefail
+
+          case "$(uname -m)" in
+            arm64)
+              pcl_arch=arm64
+              target_arch=arm64
+              ;;
+            x86_64)
+              pcl_arch=x64
+              target_arch=x86_64
+              ;;
+            *)
+              echo "Unsupported macOS runner architecture: $(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+
+          archive="$RUNNER_TEMP/PCL-${PCL_COMMIT}.zip"
+          extract_dir="$RUNNER_TEMP/pcl-extract"
+          export PCLDIR="$RUNNER_TEMP/PCL"
+          export PCLSRCDIR="$PCLDIR/src"
+          export PCLINCDIR="$PCLDIR/include"
+          export PCLLIBDIR64="$PCLDIR/lib/macos/$pcl_arch"
+          export PCLBINDIR64="$GITHUB_WORKSPACE/src/processes/PlanckStarColorMapping/build/1.9.6/bin"
+          export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+          xcode_developer_dir="$(xcode-select -p)"
+          xcode_app="${xcode_developer_dir%/Contents/Developer}"
+          if [[ ! -e /Applications/Xcode.app ]]; then
+            sudo ln -s "$xcode_app" /Applications/Xcode.app
+          fi
+          if [[ ! -d /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk ]]; then
+            echo "The selected Xcode does not provide the SDK path expected by PCL." >&2
+            exit 1
+          fi
+          jobs="$(sysctl -n hw.ncpu)"
+
+          echo "Building for $target_arch with $(xcodebuild -version | tr '\n' ' ')"
+          curl --fail --location --retry 3 \
+            "https://gitlab.com/pixinsight/PCL/-/archive/${PCL_COMMIT}/PCL-${PCL_COMMIT}.zip" \
+            --output "$archive"
+          echo "${PCL_ARCHIVE_SHA256}  ${archive}" | shasum -a 256 --check
+          mkdir -p "$extract_dir"
+          unzip -q "$archive" -d "$extract_dir"
+          mv "$extract_dir/PCL-$PCL_COMMIT" "$PCLDIR"
+          mkdir -p "$PCLLIBDIR64" "$PCLBINDIR64"
+
+          for library in lz4 zstd zlib lcms; do
+            make -C "$PCLSRCDIR/3rdparty/$library/macosx/g++" \
+              -f "makefile-$pcl_arch" -j "$jobs"
+          done
+          make -C "$PCLSRCDIR/pcl/macosx/g++" \
+            -f "makefile-$pcl_arch" -j "$jobs"
+
+          project_dir="$GITHUB_WORKSPACE/src/processes/PlanckStarColorMapping"
+          object_dir="$RUNNER_TEMP/pscm-objects/$pcl_arch"
+          mkdir -p "$object_dir"
+
+          compile_flags=(
+            -c -pipe -pthread -arch "$target_arch" -fPIC
+            -isysroot "$SDKROOT" -mmacosx-version-min=14
+            -D_REENTRANT -D__PCL_MACOSX -DPSCM_EMBED_ICON_SVG
+            -I"$PCLINCDIR" -I"$PCLSRCDIR/3rdparty"
+            -minline-all-stringops -O3 -ffunction-sections -fdata-sections -ffast-math
+            -ffp-contract=on -fno-finite-math-only
+            -Wno-overriding-option
+            -fvisibility=hidden -fvisibility-inlines-hidden
+            -std=c++20 -stdlib=libc++
+            -Wall -Wno-parentheses -Wno-missing-braces -Wno-extern-c-compat
+          )
+          if [[ "$pcl_arch" == x64 ]]; then
+            compile_flags+=(-D__PCL_AVX2 -D__PCL_FMA -mavx2 -mfma)
+          fi
+
+          sources=(
+            PSCMModule.cpp
+            PSCMProcess.cpp
+            PSCMInstance.cpp
+            PSCMInterface.cpp
+          )
+          objects=()
+          for source in "${sources[@]}"; do
+            object="$object_dir/${source%.cpp}.o"
+            clang++ "${compile_flags[@]}" \
+              -MMD -MP -MF "$object_dir/${source%.cpp}.d" \
+              -o "$object" "$project_dir/$source"
+            objects+=("$object")
+          done
+
+          output="$PCLBINDIR64/PlanckStarColorMapping-pxm.dylib"
+          clang++ -arch "$target_arch" -fPIC -headerpad_max_install_names \
+            -Wl,-syslibroot,"$SDKROOT" -mmacosx-version-min=14 -stdlib=libc++ \
+            -Wl,-dead_strip -rdynamic -dynamiclib \
+            -install_name @executable_path/PlanckStarColorMapping-pxm.dylib \
+            -L"$PCLLIBDIR64" -Wl,-rpath,@executable_path/../../../bin \
+            -o "$output" "${objects[@]}" \
+            -framework AppKit -lpthread \
+            -lPCL-pxi -llz4-pxi -lzstd-pxi -lzlib-pxi -llcms-pxi
+
+          file "$output"
+          lipo -info "$output"
+          nm -gU "$output" | grep -q ' _InstallPixInsightModule$'
+
+      - name: Upload module
+        uses: actions/upload-artifact@v4
+        with:
+          name: PlanckStarColorMapping-pxm-macos-${{ runner.arch }}
+          path: src/processes/PlanckStarColorMapping/build/1.9.6/bin/PlanckStarColorMapping-pxm.dylib
+          if-no-files-found: error
+          retention-days: 14

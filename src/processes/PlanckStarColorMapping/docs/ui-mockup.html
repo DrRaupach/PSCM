@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PSCM PixInsight UI mockup</title>
+<style>
+  :root {
+    color-scheme: dark;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #17191c;
+    color: #e4e6e8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; }
+  .window {
+    width: min(700px, 100%);
+    margin: 0 auto;
+    border: 1px solid #555b61;
+    border-radius: 7px;
+    overflow: hidden;
+    background: #292c30;
+    box-shadow: 0 18px 48px #0009;
+  }
+  .titlebar {
+    height: 39px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    background: #383c41;
+    border-bottom: 1px solid #191a1c;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .app-icon {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff8, transparent 34%), conic-gradient(#7cc9f2, #f8c56d, #f18e78, #7cc9f2);
+  }
+  .titlebar .spacer { flex: 1; }
+  .win-btn { color: #bdc1c5; font-size: 14px; padding: 0 5px; }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 48px;
+    padding: 7px 12px;
+    background: #25282b;
+    border-bottom: 1px solid #45494e;
+  }
+  .tool {
+    min-width: 29px; height: 28px;
+    display: grid; place-items: center;
+    border: 1px solid #50555a; border-radius: 4px;
+    background: linear-gradient(#3a3e43, #303337);
+    color: #d7dadc; font-size: 15px;
+  }
+  .tool.primary { color: #c9e8fc; }
+  .toolbar .hint { margin-left: auto; color: #9da3a8; font-size: 11px; }
+  .body { padding: 18px 21px 20px; }
+  .process-title {
+    margin: 0 0 12px;
+    padding: 0.25em;
+    border: 1px solid #858a8e;
+    color: #c6cacf;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .intro {
+    padding: 12px 14px;
+    margin-bottom: 17px;
+    border: 1px solid #51565b;
+    border-radius: 4px;
+    background: #25282b;
+    color: #c6cacf;
+    white-space: pre-wrap;
+    font: 11px/1.4 "Segoe UI", Arial, sans-serif;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 228px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-height: 47px;
+  }
+  .label { text-align: right; color: #d9dcdf; font-size: 12px; }
+  .combo, .edit {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #555b61;
+    border-radius: 3px;
+    background: #1e2022;
+    color: #edf0f2;
+    font-size: 12px;
+  }
+  .combo { justify-content: space-between; padding: 0 9px; }
+  .arrow { color: #aeb3b7; font-size: 10px; }
+  .numeric { display: grid; grid-template-columns: 68px minmax(100px, 1fr) 54px; gap: 8px; align-items: center; }
+  .edit { justify-content: flex-end; padding: 0 8px; font-variant-numeric: tabular-nums; }
+  .reset {
+    width: 22px; height: 22px; padding: 2px;
+    display: grid; place-items: center;
+    border: 1px solid #555b61; border-radius: 3px;
+    background: linear-gradient(#41464b, #33373b);
+    color: #d7dadc;
+  }
+  .reset svg {
+    width: 15px; height: 15px;
+    fill: none; stroke: currentColor; stroke-width: 1.5;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .slider {
+    height: 18px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .track { height: 4px; width: 100%; background: #555b60; border-radius: 4px; }
+  .fill { position: absolute; left: 0; width: 50%; height: 4px; background: #6da9d1; border-radius: 4px; }
+  .thumb {
+    position: absolute; left: 50%; width: 13px; height: 13px;
+    margin-left: -6px; border-radius: 50%;
+    border: 1px solid #aeb7bd; background: #dce1e4;
+    box-shadow: 0 1px 3px #0009;
+  }
+  .check-row { margin: 9px 0 2px 240px; font-size: 12px; color: #d9dcdf; }
+  .check {
+    display: inline-block; vertical-align: -3px;
+    width: 15px; height: 15px; margin-right: 8px;
+    border: 1px solid #72787e; border-radius: 3px; background: #202225;
+  }
+  .disabled { opacity: .48; }
+  .bottom {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 20px; padding-top: 13px; border-top: 1px solid #45494e;
+  }
+  .note { max-width: 390px; color: #92999f; font-size: 10px; line-height: 1.4; }
+  .buttons { display: flex; gap: 8px; }
+  .button {
+    min-width: 68px; padding: 6px 12px; text-align: center;
+    border: 1px solid #555b61; border-radius: 4px;
+    background: linear-gradient(#41464b, #33373b); font-size: 11px;
+  }
+  .button.apply { border-color: #5685a4; background: linear-gradient(#4e83a6, #396684); }
+  .caption { width: min(700px, 100%); margin: 12px auto 0; color: #a1a7ac; font-size: 11px; text-align: center; }
+  @media (max-width: 580px) {
+    body { padding: 10px; }
+    .row { grid-template-columns: 1fr; gap: 5px; margin: 11px 0; }
+    .label { text-align: left; }
+    .check-row { margin-left: 0; }
+    .bottom { align-items: flex-start; flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+  <main class="window" aria-label="Conceptual PixInsight process interface mockup">
+    <header class="titlebar">
+      <span class="app-icon" aria-hidden="true"></span>
+      <span>Planck Star Color Mapping (PSCM)</span>
+      <span class="spacer"></span><span class="win-btn">—</span><span class="win-btn">□</span><span class="win-btn">×</span>
+    </header>
+    <nav class="toolbar" aria-label="PixInsight process controls">
+      <span class="tool primary" title="New instance">◈</span>
+      <span class="tool" title="Reset">↺</span>
+      <span class="tool" title="Apply">✓</span>
+      <span class="tool" title="Apply globally">▣</span>
+      <span class="tool" title="Real-time preview">◉</span>
+      <span class="hint">Standard PixInsight process toolbar</span>
+    </nav>
+    <section class="body">
+      <div class="process-title"><strong>Planck Star Color Mapping (PSCM) version V1.3.0</strong><br>Copyright &copy; 2026 Dr. Rainer Raupach</div>
+      <pre class="intro">How to use PSCM?
+(example/typical workflow for HOO)
+
+1.  Load matching LINEAR Ha and OIII images after DBE/Graxpert.
+
+2.  Combine to HOO color image using ChannelCombination.
+
+3.  Apply ImageSolver to find astrometric solution on HOO image.
+
+4.  Apply SPCC with 'Red filter' at 656.3, 'Green/Blue filter' at 500.7 in
+     'Narrowband mode' and 'Optimize for Stars' checked. The white reference
+     should not be ''too hot''. 'Average Galaxy' (~4500K) is a good choice.
+
+5.  Derive the Starless image (e.g. by SXT), also the Stars in unscreen mode.
+     [Stars can also be calculated manually using PixelMath by ~(~HOO / ~Starless)]
+
+6.  Apply PSCM to the Star image which transforms the HOO colors
+     to black body colors according to the stars' temperatures.
+
+7.  Combine the PSCM mapped Stars with the Starless by screening,
+     e.g. using PixelMath by ~(~Starless * ~Stars)
+
+Voilà! You now have a bi-color HOO image with (almost) naturally colored stars
+without the need of an additional RGB image, still in lineal domain.
+Continue with stretching and further post-processing as usual.
+
+In general: the wavelengths in SPCC for S|H|O should be 672.4|656.3|500.7
+assigned to the respective filter slot. For RGB, the standard filters can be used.</pre>
+      <div class="row">
+        <div class="label">Image Input Type:</div>
+        <div class="combo"><span>HOO</span><span class="arrow">▼</span></div>
+      </div>
+      <div class="row">
+        <div class="label">Color Saturation Factor:</div>
+        <div class="numeric"><div class="edit">1.00</div><div class="slider"><div class="track"></div><div class="fill"></div><div class="thumb"></div></div><button class="reset" title="Restore factory default: 1.00" aria-label="Reset saturation to factory default"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.2 4.1A5.2 5.2 0 1 1 2.8 8"/><path d="M1.8 3.6v3.2H5"/><path d="m6.3 6.4 3.4 3.4m0-3.4L6.3 9.8"/></svg></button></div>
+      </div>
+      <div class="row">
+        <div class="label">Protect Background (X*MAD):</div>
+        <div class="numeric"><div class="edit">1.5</div><div class="slider"><div class="track"></div><div class="fill" style="width:9%"></div><div class="thumb" style="left:9%"></div></div><button class="reset" title="Restore factory default: 1.5" aria-label="Reset background protection to factory default"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.2 4.1A5.2 5.2 0 1 1 2.8 8"/><path d="M1.8 3.6v3.2H5"/><path d="m6.3 6.4 3.4 3.4m0-3.4L6.3 9.8"/></svg></button></div>
+      </div>
+      <div class="check-row"><span class="check" aria-hidden="true"></span>Unphysical</div>
+      <div class="row disabled">
+        <div class="label">Spread Spectral Classes by:</div>
+        <div class="numeric"><div class="edit">1.00</div><div class="slider"><div class="track"></div><div class="fill" style="width:0%"></div><div class="thumb" style="left:0%"></div></div><button class="reset" title="Restore factory default: 1.00" aria-label="Reset spectral spread to factory default"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.2 4.1A5.2 5.2 0 1 1 2.8 8"/><path d="M1.8 3.6v3.2H5"/><path d="m6.3 6.4 3.4 3.4m0-3.4L6.3 9.8"/></svg></button></div>
+      </div>
+      <div class="bottom">
+        <div class="note">Conceptual preview. The Windows x64 module compiles for PI 1.8.9-3 but has not yet been loaded in PixInsight.</div>
+        <div class="buttons"><span class="button">Reset</span><span class="button">New Instance</span><span class="button apply">Apply</span></div>
+      </div>
+    </section>
+  </main>
+  <p class="caption">UI concept — full script help, reset icons, and the standard real-time preview control are represented; in-host appearance and behavior still require testing.</p>
+</body>
+</html>
