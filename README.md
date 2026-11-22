@@ -15,9 +15,9 @@ Due to the mathematical properties of the Planck distribution, it is sufficient 
 <p><b>PixInsight Integration:</b><br>
 <ul>
 <li>To use PSCM in PixInsight add the following repository link in RESOURCES -> Updates -> Manage Repositories: https://drraupach.github.io/PSCM/</li>
-<li>Requires minimum PixInsight version 1.9.3 with update-rsc.auth equal to or newer than Feb 13th 2026.</li>
-<li>Dedicated version for PixInsight version 1.9.4 with javascript v8 engine support.</li>
-<li>A native C++ process port is being prepared in the <a href="src/processes/PlanckStarColorMapping/README.md">process project</a>; it requires the matching PixInsight PCL SDK and is not yet a built module.</li>
+<li>Requires minimum PixInsight version 1.9.3 with update-rsc.auth dated February 13, 2026, or newer. In PI 1.9.3 (prior to javascript v8 engine): the PSCM script v1.2.0 will be installed. Keep in mind that PixInsight scripts aren’t the fastest! ;) Because they run on JavaScript, they are single threaded and can’t process pixels in parallel. So please be patient when working with large images.</li>
+<li>On PI version 1.9.4 and 1.9.5: the PSCM v1.3.0 will be installed as a script with javascript v8 engine support.</li>
+<li>On PI version 1.9.6 and higher: PSCM comes as a process module (v1.3)! Lunix is not supported yet.</li>
 </ul>
 </p><br>
 
