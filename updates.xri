@@ -5,6 +5,17 @@
          Planck Star Color Mapping (PSCM).
       </p>
    </description>
+   <metadata id="20261122-PSCM-process" releaseDate="20261122">
+      <title>Planck Star Color Mapping (PSCM) - v1.3</title>
+      <description>
+         <p>
+                  This process performs mapping of narrow-band stars to RGB stars according to Planck&apos;s law in PixInsight.
+               </p>
+         <p>			   
+                  It contains the smae algorithm as the script versions 1.2 and 1.3, but in form of a process.
+               </p>
+      </description>
+   </metadata>
    <platform os="all" arch="noarch" version="1.9.3:1.9.3">
       <package fileName="PSCM_v120.zip" sha1="6cb2fd9d297e835d9b8ede1207dc56da13ec1fe9" type="script" releaseDate="202604191200000">
          <title>
@@ -23,7 +34,7 @@
          </description>
       </package>
    </platform>
-   <platform os="all" arch="noarch" version="1.9.4:1.9.9">
+   <platform os="all" arch="noarch" version="1.9.4:1.9.5">
       <package fileName="PSCM_v8engine_v130.zip" sha1="caa64b38523210d30d9e4c369c40810d12961724" type="script" releaseDate="20260906120000">
          <title>
                Planck Star Color Mapping (PSCM) - v1.3
@@ -41,5 +52,11 @@
          </description>
       </package>
    </platform>
+   <platform os="windows" arch="x64" version="1.9.6:1.9.9">
+      <package fileName="PSCM_process_v130_windows.zip" sha1="318ad677e69eeda59965258d38c1b7a2019f865b" type="module" metadata="20261122-PSCM-process"/>
+   </platform>
+   <platform os="macosx" arch="arm64" version="1.9.6:1.9.9">
+      <package fileName="PSCM_process_v130_macos.tar.gz" sha1="da16859d20ea841f08e4d5b08555e4f545df460f" type="module" metadata="20261122-PSCM-process"/>
+   </platform>
 </xri>
-<Signature developerId="DrRaupach" timestamp="2026-09-06T09:32:04.438Z" encoding="Base64">R7Qc/ceA2R87x7YsG+x7ePFsTLbJs0i6MuLC/ljr2o/uBdb4xmYC0Pd08IIbDt9w7ArplOTGo3yo5e3gWZFHCg==</Signature>
+<Signature developerId="DrRaupach" timestamp="2026-11-22T08:26:45.481Z" encoding="Base64">wAdl6CWqISp2pkvxAOFwESsd/7BzOmRM+LCnNveAxWIn1fLmwGTBRu6lrJy8k2X7Le3P4zXhqVFhFQnzi62xCg==</Signature>
